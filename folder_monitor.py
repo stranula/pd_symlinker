@@ -2,7 +2,7 @@ import time
 import threading
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from pd_symlinks import create_symlinks
+from pd_symlinker import create_symlinks
 
 class FolderMonitor:
     def __init__(self, folder_to_monitor):
