@@ -26,8 +26,9 @@ class FolderMonitor:
                 return None
             elif event.event_type in ('created', 'modified', 'deleted', 'moved'):
                 # Run the create_symlinks function when a file event is detected
-                create_symlinks()
                 print(f"Change detected: {event.event_type} - {event.src_path}")
+                create_symlinks()
+                print("create_symlinks() function executed.")
 
 if __name__ == '__main__':
     folder_to_monitor = "/data/torrents"
