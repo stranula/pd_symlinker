@@ -31,5 +31,6 @@ class FolderMonitor:
 
 if __name__ == '__main__':
     folder_to_monitor = "/data/torrents"
+    print("Monitoring Folder: " + folder_to_monitor)
     monitor = FolderMonitor(folder_to_monitor)
     monitor.run()
