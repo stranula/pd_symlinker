@@ -9,10 +9,10 @@ from collections import defaultdict
 from colorama import init, Fore, Style
 
 # Constants
-DEFAULT_CATALOG_PATH = '/catalog/catalog.csv'
-src_dir = '/data/torrents'
-dest_dir = '/data/sorted/shows'
-dest_dir_movies = '/data/sorted/movies'
+DEFAULT_CATALOG_PATH = 'app/catalog/catalog.csv'
+src_dir = '/app/data/torrents'
+dest_dir = '/app/data/sorted/shows'
+dest_dir_movies = '/app/data/sorted/movies'
 
 # Initialize colorama
 init(autoreset=True)
