@@ -10,9 +10,9 @@ from colorama import init, Fore, Style
 
 # Constants
 DEFAULT_CATALOG_PATH = '/catalog/catalog.csv'
-src_dir = '/data/torrents'
-dest_dir = '/data/sorted/shows'
-dest_dir_movies = '/data/sorted/movies'
+src_dir = '/Zurg_Stranula/pd_zurg_mnt_stranula/torrents'
+dest_dir = '/Zurg_Stranula/sorted/shows'
+dest_dir_movies = '/Zurg_Stranula/sorted/movies'
 
 # Initialize colorama
 init(autoreset=True)
