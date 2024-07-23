@@ -14,14 +14,14 @@ src_dir = '/app/data/torrents'
 dest_dir = '/app/data/sorted/shows'
 dest_dir_movies = '/app/data/sorted/movies'
 
-# Initialize colorama
-init(autoreset=True)
+# # Initialize colorama
+# init(autoreset=True)
 
-# Ensure necessary directories exist
-os.makedirs(src_dir, exist_ok=True)
-os.makedirs(dest_dir, exist_ok=True)
-os.makedirs(dest_dir_movies, exist_ok=True)
-os.makedirs(os.path.dirname(DEFAULT_CATALOG_PATH), exist_ok=True)
+# # Ensure necessary directories exist
+# os.makedirs(src_dir, exist_ok=True)
+# os.makedirs(dest_dir, exist_ok=True)
+# os.makedirs(dest_dir_movies, exist_ok=True)
+# os.makedirs(os.path.dirname(DEFAULT_CATALOG_PATH), exist_ok=True)
 
 # Utilities
 def extract_year(query):
