@@ -16,7 +16,7 @@ services:
       ## Location for sorted movies
       - /pd_zurg/data/sorted/movies:/data/sorted/movies
       ## Location for Plex_Debrid catalog.csv
-      - /appdata/pd_zurg/RB:/catalog
+      - /appdata/pd_zurg/RD:/catalog
     environment:
       - TZ=
     devices:
