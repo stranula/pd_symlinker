@@ -14,5 +14,8 @@ RUN pip install watchdog
 # Copy the current directory contents into the container at /app
 COPY . /app
 
+# Create necessary directories
+RUN mkdir -p /data/torrents /data/sorted/shows /data/sorted/movies /catalog
+
 # Command to run the folder monitor script
 CMD ["python", "folder_monitor.py"]
