@@ -1,0 +1,26 @@
+version: "0.1"
+
+services:
+  pd_symlinker:
+    container_name: pd_symlinker
+    image: stranulax/pd_symlinker:latest
+    ## Optionally, specify a specific version of pd_zurg
+    # image: iampuid0/pd_zurg:2.0.0
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t    
+    volumes:
+      ## Location of zurg folder to monitor 
+      - /pd_zurg/data/torrents:/data/torrents
+      ## Location for sorted shows
+      - /pd_zurg/data/sorted/shows:/data/sorted/shows
+      ## Location for sorted movies
+      - /pd_zurg/data/sorted/movies:/data/sorted/movies
+    environment:
+      - TZ=
+    devices:
+      - /dev/fuse:/dev/fuse:rwm
+    cap_add:
+      - SYS_ADMIN     
+    security_opt:
+      - apparmor:unconfined    
+      - no-new-privileges
