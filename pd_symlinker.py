@@ -9,8 +9,8 @@ from collections import defaultdict
 from colorama import init, Fore, Style
 
 # Constants
-DEFAULT_CATALOG_PATH = '/zurg/RD/catalog.csv'
-src_dir = '/data/pd_zurg_mnt_stranula/torrents'
+DEFAULT_CATALOG_PATH = '/catalog/catalog.csv'
+src_dir = '/data/torrents'
 dest_dir = '/data/sorted/shows'
 dest_dir_movies = '/data/sorted/movies'
 
