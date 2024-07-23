@@ -14,6 +14,11 @@ src_dir = '/app/data/torrents'
 dest_dir = '/app/data/sorted/shows'
 dest_dir_movies = '/app/data/sorted/movies'
 
+print(DEFAULT_CATALOG_PATH)
+print(src_dir)
+print(dest_dir)
+print(dest_dir_movies)
+
 # # Initialize colorama
 # init(autoreset=True)
 
