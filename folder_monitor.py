@@ -31,7 +31,7 @@ class FolderMonitor:
                 print("create_symlinks() function executed.")
 
 if __name__ == '__main__':
-    folder_to_monitor = "/data/torrents"
+    folder_to_monitor = "/Zurg_Stranula/pd_zurg_mnt_stranula/torrents"
     print("Monitoring Folder: " + folder_to_monitor)
     monitor = FolderMonitor(folder_to_monitor)
     monitor.run()
