@@ -20,13 +20,10 @@ print(dest_dir)
 print(dest_dir_movies)
 
 def print_directory_structure(root_dir):
-    for dirpath, dirnames, filenames in os.walk(root_dir):
+    for dirpath, dirnames, _ in os.walk(root_dir):
         level = dirpath.replace(root_dir, '').count(os.sep)
         indent = ' ' * 4 * (level)
         print(f'{indent}{os.path.basename(dirpath)}/')
-        subindent = ' ' * 4 * (level + 1)
-        for f in filenames:
-            print(f'{subindent}{f}')
 
 root_directory = "/app"
 print_directory_structure(root_directory)
@@ -41,13 +38,10 @@ os.makedirs(dest_dir_movies, exist_ok=True)
 os.makedirs(os.path.dirname(DEFAULT_CATALOG_PATH), exist_ok=True)
 
 def print_directory_structure(root_dir):
-    for dirpath, dirnames, filenames in os.walk(root_dir):
+    for dirpath, dirnames, _ in os.walk(root_dir):
         level = dirpath.replace(root_dir, '').count(os.sep)
         indent = ' ' * 4 * (level)
-        print(f'After: {indent}{os.path.basename(dirpath)}/')
-        subindent = ' ' * 4 * (level + 1)
-        for f in filenames:
-            print(f'{subindent}{f}')
+        print(f'aFTER: {indent}{os.path.basename(dirpath)}/')
 
 root_directory = "/app"
 print_directory_structure(root_directory)
