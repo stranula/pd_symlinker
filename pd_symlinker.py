@@ -14,14 +14,16 @@ src_dir = '/data/torrents'
 dest_dir = '/data/sorted/shows'
 dest_dir_movies = '/data/sorted/movies'
 
-# # Initialize colorama
-# init(autoreset=True)
+# Initialize colorama
+init(autoreset=True)
 
-# # Ensure necessary directories exist
-# os.makedirs(src_dir, exist_ok=True)
-# os.makedirs(dest_dir, exist_ok=True)
-# os.makedirs(dest_dir_movies, exist_ok=True)
-# os.makedirs(os.path.dirname(DEFAULT_CATALOG_PATH), exist_ok=True)
+# Ensure necessary directories exist
+os.makedirs(src_dir, exist_ok=True)
+os.makedirs(dest_dir, exist_ok=True)
+os.makedirs(dest_dir_movies, exist_ok=True)
+os.makedirs(os.path.dirname(DEFAULT_CATALOG_PATH), exist_ok=True)
+
+print(f"Directories ensured: {src_dir}, {dest_dir}, {dest_dir_movies}, {DEFAULT_CATALOG_PATH}")
 
 # Utilities
 def extract_year(query):
@@ -67,6 +69,7 @@ def extract_id(eid_string, preferred='tmdb', fallback='imdb'):
 # Symlink creation
 def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_path):
     catalog_data = read_catalog_csv(catalog_path)
+    print(f"Catalog data read from {catalog_path}")
 
     for entry in catalog_data:
         title = entry['Title']
@@ -96,6 +99,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
         if not os.path.exists(target_folder):
             try:
                 os.makedirs(target_folder)
+                print(f"Created target folder: {target_folder}")
             except OSError as e:
                 print(f"Error creating target folder: {e}")
                 continue
@@ -200,4 +204,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         print(f"Symlink already exists: {target_file_path}")
 
 def create_symlinks():
+    print("create_symlinks function called.")
     create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, DEFAULT_CATALOG_PATH)
+    print("create_symlinks function completed.")
