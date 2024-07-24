@@ -7,11 +7,11 @@ from datetime import datetime
 from colorama import init
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
+import ffmpeg
 
 # Constants
 DEFAULT_CATALOG_PATH = '/catalog/catalog.csv'
 PROCESSED_ITEMS_FILE = '/catalog/processed_items.txt'
-FFPROBE_PATH = '/ffprobe/ffprobe'  # Adjust this path to the location of ffprobe on your system
 src_dir = '/Zurg_Stranula/pd_zurg_mnt_stranula/torrents'
 dest_dir = '/Zurg_Stranula/sorted/shows'
 dest_dir_movies = '/Zurg_Stranula/sorted/movies'
@@ -39,28 +39,17 @@ def extract_resolution(name, parent_folder_name=None, file_path=None):
 
     if file_path:
         try:
-            if not os.path.exists(FFPROBE_PATH):
-                raise FileNotFoundError(f"{FFPROBE_PATH} does not exist")
-
-            result = subprocess.run(
-                [FFPROBE_PATH, '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'json', file_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            if result.returncode == 0:
-                probe_data = json.loads(result.stdout)
-                width = probe_data['streams'][0]['width']
-                height = probe_data['streams'][0]['height']
-                if width in [720, 1080, 2160]:
-                    return f"{width}p"
-                else:
-                    return f"{width}x{height}"
+            probe = ffmpeg.probe(file_path, select_streams='v:0', show_entries='stream=width,height')
+            video_stream = probe['streams'][0]
+            width = video_stream['width']
+            height = video_stream['height']
+            if width in [720, 1080, 2160]:
+                return f"{width}p"
             else:
-                print(f"ffprobe error: {result.stderr}")
-        except Exception as e:
-            print(f"Error using ffprobe: {e}")
-
+                return f"{width}x{height}"
+        except ffmpeg.Error as e:
+            print(f"Error getting resolution with ffmpeg: {e}")
+            return None
     return None
 
 def sanitize_title(name):
@@ -140,16 +129,26 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             torrent_dir_name = entry['Torrent File Name']
             actual_title = entry['Actual Title']
 
+            # Determine the base title and year
             if type_ == 'movie':
                 base_title = title
                 base_year = year
                 tmdb_id = extract_id(entry['EID']) if entry['EID'] else 'unknown'
-                target_folder = os.path.join(dest_dir_movies, f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}")
             else:
                 base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
                 base_year = grandparent_year if grandparent_year else parent_year if parent_year else year
                 tmdb_id = extract_id(entry.get('GrandParentEID')) if entry.get('GrandParentEID') else extract_id(entry.get('ParentEID')) if entry.get('ParentEID')) else extract_id(entry.get('EID')) if entry.get('EID') else 'unknown'
-                target_folder = os.path.join(dest_dir, f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}")
+
+            # Avoid duplicate years in the folder name
+            if f"({base_year})" in base_title:
+                folder_name = f"{base_title} {{tmdb-{tmdb_id}}}"
+            else:
+                folder_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}"
+
+            if type_ == 'movie':
+                target_folder = os.path.join(dest_dir_movies, folder_name)
+            else:
+                target_folder = os.path.join(dest_dir, folder_name)
 
             if not os.path.exists(target_folder):
                 try:
@@ -218,6 +217,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             print(f"Error processing entry: {e}")
 
     write_processed_items(processed_items_file, new_processed_items)
+
 
 def create_symlinks():
     print("create_symlinks function called.")
