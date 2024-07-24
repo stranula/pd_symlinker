@@ -2,6 +2,7 @@ import time
 from watchdog.observers.polling import PollingObserver as Observer
 from watchdog.events import FileSystemEventHandler
 from pd_symlinker import create_symlinks
+from download_ffprobe import download_ffprobe()
 
 class FolderMonitor:
     def __init__(self, folder_to_monitor):
@@ -31,6 +32,7 @@ class FolderMonitor:
                 print("create_symlinks() function executed.")
 
 if __name__ == '__main__':
+    download_ffprobe()
     folder_to_monitor = "/Zurg_Stranula/pd_zurg_mnt_stranula/torrents"
     print("Monitoring Folder: " + folder_to_monitor)
     monitor = FolderMonitor(folder_to_monitor)
