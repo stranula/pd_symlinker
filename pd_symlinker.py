@@ -7,7 +7,7 @@ from datetime import datetime
 from colorama import init
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
-import ffmpeg
+import imageio_ffmpeg as ffmpeg
 
 # Constants
 DEFAULT_CATALOG_PATH = '/catalog/catalog.csv'
@@ -39,16 +39,22 @@ def extract_resolution(name, parent_folder_name=None, file_path=None):
 
     if file_path:
         try:
-            probe = ffmpeg.probe(file_path, select_streams='v:0', show_entries='stream=width,height')
-            video_stream = probe['streams'][0]
-            width = video_stream['width']
-            height = video_stream['height']
-            if width in [720, 1080, 2160]:
-                return f"{width}p"
+            ffprobe_path = ffmpeg.get_ffmpeg_exe()  # Get the path to the bundled ffprobe
+            cmd = [ffprobe_path, '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'json', file_path]
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if result.returncode == 0:
+                probe_data = json.loads(result.stdout)
+                width = probe_data['streams'][0]['width']
+                height = probe_data['streams'][0]['height']
+                if width in [720, 1080, 2160]:
+                    return f"{width}p"
+                else:
+                    return f"{width}x{height}"
             else:
-                return f"{width}x{height}"
-        except ffmpeg.Error as e:
-            print(f"Error getting resolution with ffmpeg: {e}")
+                print(f"Error: {result.stderr}")
+                return None
+        except Exception as e:
+            print(f"Error getting resolution: {e}")
             return None
     return None
 
