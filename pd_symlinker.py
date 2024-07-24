@@ -103,6 +103,24 @@ def write_processed_items(file_path, processed_items):
     with open(file_path, 'w') as file:
         file.write('\n'.join(processed_items))
 
+def extract_season_episode(file_name):
+    # List of regex patterns to match different season and episode naming conventions
+    patterns = [
+        r'[Ss](\d{1,2})[Ee](\d{1,2})',       # S01E02 or s01e02
+        r'(\d{1,2})[xX](\d{1,2})',            # 1x02 or 1X02
+        r'[Ss]eason\s*(\d{1,2})\s*[Ee]pisode\s*(\d{1,2})',  # Season 1 Episode 2
+        r'[Ss](\d{1,2})\.[Ee](\d{1,2})',      # S01.E02
+        r'[Ee]p?\s*(\d{1,2})',                # Ep02, Ep 02, E02
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, file_name, re.IGNORECASE)
+        if match:
+            season = match.group(1).zfill(2)
+            episode = match.group(2).zfill(2) if len(match.groups()) > 1 else None
+            return season, episode
+    return None, None
+
 def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_path, processed_items_file):
     catalog_data = read_catalog_csv(catalog_path)
     processed_items = read_processed_items(processed_items_file)
@@ -179,10 +197,42 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                     else:
                         print(f"Symlink already exists: {target_file_path}")
             else:
-                base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
-                base_year = grandparent_year if grandparent_year else parent_year if parent_year else year
-                tmdb_id = extract_id(entry.get('GrandParentEID')) if entry.get('GrandParentEID') else extract_id(entry.get('ParentEID')) if entry.get('ParentEID') else extract_id(entry.get('EID')) if entry.get('EID') else 'unknown'
+                # base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
+                # base_year = grandparent_year if grandparent_year else parent_year if parent_year else year
+                # tmdb_id = extract_id(entry.get('GrandParentEID')) if entry.get('GrandParentEID') else extract_id(entry.get('ParentEID')) if entry.get('ParentEID') else extract_id(entry.get('EID')) if entry.get('EID') else 'unknown'
 
+                        else:
+            season, episode = extract_season_episode(file_name)
+            if season and episode:
+                season_folder = f"Season {season}"
+                episode_identifier = f"S{season}E{episode}"
+            else:
+                print(f"Skipping file (no season/episode info): {file_name}")
+                continue
+
+            resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
+            target_file_name = f"{base_title} ({base_year}) - {episode_identifier} [{resolution}]{file_ext}"
+
+            target_folder_season = os.path.join(target_folder, season_folder)
+            if not os.path.exists(target_folder_season):
+                os.makedirs(target_folder_season, exist_ok=True)
+
+            target_file_path = os.path.join(target_folder_season, target_file_name)
+            target_file_name = clean_filename(target_file_name)
+
+            if not os.path.exists(file_path):
+                print(f"Source file does not exist: {file_path}")
+            elif not os.path.exists(target_file_path):
+                try:
+                    # Create relative symlink
+                    relative_source_path = os.path.relpath(file_path, os.path.dirname(target_file_path))
+                    os.symlink(relative_source_path, target_file_path)
+                    print(f"Created relative symlink: {target_file_path} -> {relative_source_path}")
+                except OSError as e:
+                    print(f"Error creating relative symlink: {e}")
+            else:
+                print(f"Symlink already exists: {target_file_path}")
+                
             # Avoid duplicate years in the folder name
             if f"({base_year})" in base_title:
                 folder_name = f"{base_title} {{tmdb-{tmdb_id}}}"
