@@ -40,12 +40,17 @@ def extract_resolution(name, parent_folder_name=None, file_path=None):
     if file_path:
         try:
             ffprobe_path = ffmpeg.get_ffmpeg_exe()  # Get the path to the bundled ffprobe
-            cmd = [ffprobe_path, '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'json', file_path]
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            result = subprocess.run(
+                [ffprobe_path, "-v", "error", "-select_streams", "v:0", 
+                 "-show_entries", "stream=width,height", "-of", "json", file_path],
+                capture_output=True,
+                text=True
+            )
             if result.returncode == 0:
                 probe_data = json.loads(result.stdout)
-                width = probe_data['streams'][0]['width']
-                height = probe_data['streams'][0]['height']
+                video_stream = probe_data['streams'][0]
+                width = video_stream['width']
+                height = video_stream['height']
                 if width in [720, 1080, 2160]:
                     return f"{width}p"
                 else:
@@ -53,6 +58,9 @@ def extract_resolution(name, parent_folder_name=None, file_path=None):
             else:
                 print(f"Error: {result.stderr}")
                 return None
+        except Exception as e:
+            print(f"Error getting resolution with ffprobe: {e}")
+            return None
         except Exception as e:
             print(f"Error getting resolution: {e}")
             return None
