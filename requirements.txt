@@ -1,4 +1,4 @@
 watchdog
 colorama
 fuzzywuzzy
-imageio_ffmpeg
+pymediainfo
