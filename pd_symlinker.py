@@ -143,11 +143,56 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             torrent_dir_name = entry['Torrent File Name']
             actual_title = entry['Actual Title']
 
-            # Determine the base title and year
             if type_ == 'movie':
                 base_title = title
                 base_year = year
                 tmdb_id = extract_id(entry['EID']) if entry['EID'] else 'unknown'
+                if f"({base_year})" in base_title:
+                    folder_name = f"{base_title} {{tmdb-{tmdb_id}}}"
+                else:
+                    folder_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}"
+                target_folder = os.path.join(dest_dir_movies, folder_name)
+
+                # Ensure target folder exists
+                if not os.path.exists(target_folder):
+                    os.makedirs(target_folder, exist_ok=True)
+                    print(f"Created target folder: {target_folder}")
+
+                torrent_dir_path = find_best_match(torrent_dir_name, actual_title, src_dir)
+                if not torrent_dir_path:
+                    print(f"No matching directory found for {torrent_dir_name} or {actual_title}")
+                    continue
+                print(f"Processing torrent directory: {torrent_dir_path}")
+
+                # Find the largest file in the movie folder
+                largest_file = None
+                largest_size = 0
+                for file_name in os.listdir(torrent_dir_path):
+                    file_path = os.path.join(torrent_dir_path, file_name)
+                    if os.path.isfile(file_path):
+                        file_size = os.path.getsize(file_path)
+                        if file_size > largest_size:
+                            largest_size = file_size
+                            largest_file = file_name
+
+                if largest_file:
+                    file_ext = os.path.splitext(largest_file)[1]
+                    resolution = extract_resolution(largest_file, parent_folder_name=torrent_dir_path, file_path=os.path.join(torrent_dir_path, largest_file))
+                    target_file_name = f"{base_title} ({base_year}) [{resolution}]{file_ext}"
+                    target_file_name = clean_filename(target_file_name)
+                    target_file_path = os.path.join(target_folder, target_file_name)
+                    
+                    largest_file_path = os.path.join(torrent_dir_path, largest_file)
+                    if not os.path.exists(target_file_path):
+                        try:
+                            # Create relative symlink
+                            relative_source_path = os.path.relpath(largest_file_path, os.path.dirname(target_file_path))
+                            os.symlink(relative_source_path, target_file_path)
+                            print(f"Created relative symlink: {target_file_path} -> {relative_source_path}")
+                        except OSError as e:
+                            print(f"Error creating relative symlink: {e}")
+                    else:
+                        print(f"Symlink already exists: {target_file_path}")
             else:
                 base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
                 base_year = grandparent_year if grandparent_year else parent_year if parent_year else year
