@@ -16,7 +16,7 @@ class FolderMonitor:
         try:
             while True:
                 print("Polling observer is running...")
-                time.sleep(10)
+                time.sleep(30)
         except KeyboardInterrupt:
             self.observer.stop()
         self.observer.join()
@@ -31,6 +31,8 @@ class FolderMonitor:
                 print("create_symlinks() function executed.")
 
 if __name__ == '__main__':
+    print("Running Startup Scan")
+    create_symlinks()
     folder_to_monitor = "/Zurg_Stranula/pd_zurg_mnt_stranula/torrents"
     print("Monitoring Folder: " + folder_to_monitor)
     monitor = FolderMonitor(folder_to_monitor)
