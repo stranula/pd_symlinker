@@ -81,13 +81,33 @@ def extract_id(eid_string, preferred='tmdb', fallback='imdb'):
 
 def find_best_match(torrent_dir_name, actual_title, src_dir):
     try:
+        # Get all directories in source directory
         dirs = os.listdir(src_dir)
+        
+        # Sanitize the directory names and create a mapping to the original names
+        sanitized_dirs = {sanitize_title(d): d for d in dirs}
+        
+        # Try matching with unsanitized names
         best_match, score = process.extractOne(torrent_dir_name, dirs, scorer=fuzz.ratio)
         if score >= 90:
             return os.path.join(src_dir, best_match)
+        
         best_match, score = process.extractOne(actual_title, dirs, scorer=fuzz.ratio)
         if score >= 90:
             return os.path.join(src_dir, best_match)
+        
+        # Try matching with sanitized names
+        sanitized_torrent_dir_name = sanitize_title(torrent_dir_name)
+        sanitized_actual_title = sanitize_title(actual_title)
+        
+        best_match, score = process.extractOne(sanitized_torrent_dir_name, sanitized_dirs.keys(), scorer=fuzz.ratio)
+        if score >= 90:
+            return os.path.join(src_dir, sanitized_dirs[best_match])
+        
+        best_match, score = process.extractOne(sanitized_actual_title, sanitized_dirs.keys(), scorer=fuzz.ratio)
+        if score >= 90:
+            return os.path.join(src_dir, sanitized_dirs[best_match])
+        
     except Exception as e:
         print(f"Error finding best match: {e}")
     return None
