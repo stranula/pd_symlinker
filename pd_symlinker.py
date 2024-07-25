@@ -52,7 +52,7 @@ def extract_resolution(name, parent_folder_name=None, file_path=None):
     return None
 
 def sanitize_title(name):
-    return re.sub(r'[^a-zA-Z0-9\s.]', ' ', name).strip()  # Preserve periods
+    return re.sub(r'[^a-zA-Z0-9\s]', ' ', name).strip()  # Don't Preserve periods
 
 def clean_filename(filename):
     filename = re.sub(r' - - ', ' - ', filename)
