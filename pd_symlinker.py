@@ -103,16 +103,28 @@ def find_best_match(torrent_dir_name, actual_title, src_dir):
         print(best_match + " " + str(score))
         if score >= 90:
             return os.path.join(src_dir, best_match)
-
+            
         print("Santitized Torrent: " + sanitized_torrent_dir_name)
+        best_match, score = process.extractOne(sanitized_torrent_dir_name, dirs.keys(), scorer=fuzz.ratio)
         print(best_match + " " + str(score))
-        best_match, score = process.extractOne(sanitized_torrent_dir_name, sanitized_dirs.keys(), scorer=fuzz.ratio)
         if score >= 90:
             return os.path.join(src_dir, sanitized_dirs[best_match])
 
         print("Santitized Actual: " + sanitized_torrent_dir_name)
+        best_match, score = process.extractOne(sanitized_actual_title, dirs.keys(), scorer=fuzz.ratio)
         print(best_match + " " + str(score))
+        if score >= 90:
+            return os.path.join(src_dir, best_match)
+
+        print("Santitized Torrent: " + sanitized_torrent_dir_name)
+        best_match, score = process.extractOne(sanitized_torrent_dir_name, sanitized_dirs.keys(), scorer=fuzz.ratio)
+        print(best_match + " " + str(score))
+        if score >= 90:
+            return os.path.join(src_dir, best_match)
+
+        print("Santitized Actual: " + sanitized_torrent_dir_name)
         best_match, score = process.extractOne(sanitized_actual_title, sanitized_dirs.keys(), scorer=fuzz.ratio)
+        print(best_match + " " + str(score))
         if score >= 90:
             return os.path.join(src_dir, sanitized_dirs[best_match])
         
