@@ -147,6 +147,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             actual_title = entry['Actual Title']
 
             if type_ == 'movie':
+                # Movie handling code
                 base_title = title
                 base_year = year
                 tmdb_id = extract_id(entry['EID']) if entry['EID'] else 'unknown'
@@ -196,121 +197,77 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                             print(f"Error creating relative symlink: {e}")
                     else:
                         print(f"Symlink already exists: {target_file_path}")
+
             else:
-                # base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
-                # base_year = grandparent_year if grandparent_year else parent_year if parent_year else year
-                # tmdb_id = extract_id(entry.get('GrandParentEID')) if entry.get('GrandParentEID') else extract_id(entry.get('ParentEID')) if entry.get('ParentEID') else extract_id(entry.get('EID')) if entry.get('EID') else 'unknown'
+                # TV show handling code
+                base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
+                base_year = grandparent_year if grandparent_year else parent_year if parent_year else year
+                tmdb_id = extract_id(entry.get('GrandParentEID')) if entry.get('GrandParentEID') else extract_id(entry.get('ParentEID')) if entry.get('ParentEID')) else extract_id(entry.get('EID')) if entry.get('EID')) else 'unknown'
 
-                        else:
-            season, episode = extract_season_episode(file_name)
-            if season and episode:
-                season_folder = f"Season {season}"
-                episode_identifier = f"S{season}E{episode}"
-            else:
-                print(f"Skipping file (no season/episode info): {file_name}")
-                continue
-
-            resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
-            target_file_name = f"{base_title} ({base_year}) - {episode_identifier} [{resolution}]{file_ext}"
-
-            target_folder_season = os.path.join(target_folder, season_folder)
-            if not os.path.exists(target_folder_season):
-                os.makedirs(target_folder_season, exist_ok=True)
-
-            target_file_path = os.path.join(target_folder_season, target_file_name)
-            target_file_name = clean_filename(target_file_name)
-
-            if not os.path.exists(file_path):
-                print(f"Source file does not exist: {file_path}")
-            elif not os.path.exists(target_file_path):
-                try:
-                    # Create relative symlink
-                    relative_source_path = os.path.relpath(file_path, os.path.dirname(target_file_path))
-                    os.symlink(relative_source_path, target_file_path)
-                    print(f"Created relative symlink: {target_file_path} -> {relative_source_path}")
-                except OSError as e:
-                    print(f"Error creating relative symlink: {e}")
-            else:
-                print(f"Symlink already exists: {target_file_path}")
-                
-            # Avoid duplicate years in the folder name
-            if f"({base_year})" in base_title:
-                folder_name = f"{base_title} {{tmdb-{tmdb_id}}}"
-            else:
-                folder_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}"
-
-            if type_ == 'movie':
-                target_folder = os.path.join(dest_dir_movies, folder_name)
-            else:
+                if f"({base_year})" in base_title:
+                    folder_name = f"{base_title} {{tmdb-{tmdb_id}}}"
+                else:
+                    folder_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}"
                 target_folder = os.path.join(dest_dir, folder_name)
 
-            if not os.path.exists(target_folder):
-                try:
-                    os.makedirs(target_folder)
-                    print(f"Created target folder: {target_folder}")
-                except OSError as e:
-                    print(f"Error creating target folder: {e}")
+                if not os.path.exists(target_folder):
+                    try:
+                        os.makedirs(target_folder)
+                        print(f"Created target folder: {target_folder}")
+                    except OSError as e:
+                        print(f"Error creating target folder: {e}")
+                        continue
+
+                torrent_dir_path = find_best_match(torrent_dir_name, actual_title, src_dir)
+                if not torrent_dir_path:
+                    print(f"No matching directory found for {torrent_dir_name} or {actual_title}")
                     continue
+                print(f"Processing torrent directory: {torrent_dir_path}")
 
-            torrent_dir_path = find_best_match(torrent_dir_name, actual_title, src_dir)
-            if not torrent_dir_path:
-                print(f"No matching directory found for {torrent_dir_name} or {actual_title}")
-                continue
-            print(f"Processing torrent directory: {torrent_dir_path}")
+                for file_name in os.listdir(torrent_dir_path):
+                    file_path = os.path.join(torrent_dir_path, file_name)
+                    print(f"Processing file: {file_path}")
 
-            for file_name in os.listdir(torrent_dir_path):
-                file_path = os.path.join(torrent_dir_path, file_name)
-                print(f"Processing file: {file_path}")
+                    if os.path.isfile(file_path):
+                        file_ext = os.path.splitext(file_name)[1]
 
-                if os.path.isfile(file_path):
-                    file_ext = os.path.splitext(file_name)[1]
+                        season, episode = extract_season_episode(file_name)
+                        if not (season and episode):
+                            print(f"Skipping file (no season/episode info): {file_name}")
+                            continue
 
-                    if type_ == 'movie':
-                        resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
-                        target_file_name = f"{base_title} ({base_year}) [{resolution}]{file_ext}"
-                        target_folder_season = target_folder
-                        target_file_path = os.path.join(target_folder, target_file_name)
-                    else:
-                        season_number_match = re.search(r'S(\d{2})E\d{2}', file_name)
-                        if season_number_match:
-                            season_folder = f"Season {season_number_match.group(1)}"
-                        else:
-                            season_folder = "Season Unknown"
+                        season_folder = f"Season {season}"
+                        episode_identifier = f"S{season}E{episode}"
 
-                        target_folder_season = os.path.join(target_folder, season_folder)
-                        episode_identifier = re.search(r'(S\d{2}E\d{2})', file_name)
-                        if episode_identifier:
-                            episode_identifier = episode_identifier.group(1)
-                        else:
-                            episode_identifier = "Unknown Episode"
                         resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
                         target_file_name = f"{base_title} ({base_year}) - {episode_identifier} [{resolution}]{file_ext}"
 
+                        target_folder_season = os.path.join(target_folder, season_folder)
                         if not os.path.exists(target_folder_season):
                             os.makedirs(target_folder_season, exist_ok=True)
 
                         target_file_path = os.path.join(target_folder_season, target_file_name)
+                        target_file_name = clean_filename(target_file_name)
 
-                    target_file_name = clean_filename(target_file_name)
-
-                    if not os.path.exists(file_path):
-                        print(f"Source file does not exist: {file_path}")
-                    elif not os.path.exists(target_file_path):
-                        try:
-                            # Create relative symlink
-                            relative_source_path = os.path.relpath(file_path, os.path.dirname(target_file_path))
-                            os.symlink(relative_source_path, target_file_path)
-                            print(f"Created relative symlink: {target_file_path} -> {relative_source_path}")
-                        except OSError as e:
-                            print(f"Error creating relative symlink: {e}")
-                    else:
-                        print(f"Symlink already exists: {target_file_path}")
+                        if not os.path.exists(file_path):
+                            print(f"Source file does not exist: {file_path}")
+                        elif not os.path.exists(target_file_path):
+                            try:
+                                # Create relative symlink
+                                relative_source_path = os.path.relpath(file_path, os.path.dirname(target_file_path))
+                                os.symlink(relative_source_path, target_file_path)
+                                print(f"Created relative symlink: {target_file_path} -> {relative_source_path}")
+                            except OSError as e:
+                                print(f"Error creating relative symlink: {e}")
+                        else:
+                            print(f"Symlink already exists: {target_file_path}")
 
             new_processed_items.add(eid)
         except Exception as e:
             print(f"Error processing entry: {e}")
 
     write_processed_items(processed_items_file, new_processed_items)
+
 
 
 def create_symlinks():
