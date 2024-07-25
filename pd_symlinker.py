@@ -81,53 +81,54 @@ def extract_id(eid_string, preferred='tmdb', fallback='imdb'):
 
 def find_best_match(torrent_dir_name, actual_title, src_dir):
     try:
-        # Get all directories in source directory
+        # Get all directories in the source directory
         dirs = os.listdir(src_dir)
         
         # Sanitize the directory names and create a mapping to the original names
         sanitized_dirs = {sanitize_title(d): d for d in dirs}
 
-        # Try matching with sanitized names
-        sanitized_torrent_dir_name = sanitize_title(torrent_dir_name)
-        sanitized_actual_title = sanitize_title(actual_title)
+        # Function to find the largest file in a directory
+        def get_largest_file(directory):
+            largest_file = None
+            largest_size = 0
+            for file_name in os.listdir(directory):
+                file_path = os.path.join(directory, file_name)
+                if os.path.isfile(file_path):
+                    file_size = os.path.getsize(file_path)
+                    if file_size > largest_size:
+                        largest_size = file_size
+                        largest_file = file_name
+            return largest_file
 
-        print("Original Torrent: " + torrent_dir_name)
-        # Try matching with unsanitized names
-        best_match, score = process.extractOne(torrent_dir_name, dirs, scorer=fuzz.ratio)
-        print(best_match + " " + str(score))
-        if score >= 90:
-            return os.path.join(src_dir, best_match)
-        
-        print("Original Actual: " + actual_title)
-        best_match, score = process.extractOne(actual_title, dirs, scorer=fuzz.ratio)
-        print(best_match + " " + str(score))
-        if score >= 90:
-            return os.path.join(src_dir, best_match)
-            
-        print("Santitized Torrent 1: " + sanitized_torrent_dir_name)
-        best_match, score = process.extractOne(sanitized_torrent_dir_name, dirs, scorer=fuzz.ratio)
-        print(best_match + " " + str(score))
-        if score >= 90:
-            return os.path.join(src_dir, best_match)
+        # Matching with unsanitized and sanitized names
+        attempts = [
+            (torrent_dir_name, dirs),
+            (actual_title, dirs),
+            (sanitize_title(torrent_dir_name), dirs),
+            (sanitize_title(actual_title), dirs),
+            (sanitize_title(torrent_dir_name), sanitized_dirs.keys()),
+            (sanitize_title(actual_title), sanitized_dirs.keys())
+        ]
 
-        print("Santitized Actual 1: " + sanitized_torrent_dir_name)
-        best_match, score = process.extractOne(sanitized_actual_title, dirs, scorer=fuzz.ratio)
-        print(best_match + " " + str(score))
-        if score >= 90:
-            return os.path.join(src_dir, best_match)
+        for query, candidates in attempts:
+            best_match, score = process.extractOne(query, candidates, scorer=fuzz.ratio)
+            if score >= 90:
+                return os.path.join(src_dir, sanitized_dirs.get(best_match, best_match))
 
-        print("Santitized Torrent 2: " + sanitized_torrent_dir_name)
-        best_match, score = process.extractOne(sanitized_torrent_dir_name, sanitized_dirs.keys(), scorer=fuzz.ratio)
-        print(best_match + " " + str(score))
-        if score >= 90:
-            return os.path.join(src_dir, sanitized_dirs[best_match])
+        # If no match is found, check within directories based on the largest file
+        for directory in dirs:
+            dir_path = os.path.join(src_dir, directory)
+            if os.path.isdir(dir_path):
+                largest_file = get_largest_file(dir_path)
+                if largest_file:
+                    best_match, score = process.extractOne(torrent_dir_name, [largest_file], scorer=fuzz.ratio)
+                    if score >= 90:
+                        return dir_path
 
-        print("Santitized Actual 2: " + sanitized_torrent_dir_name)
-        best_match, score = process.extractOne(sanitized_actual_title, sanitized_dirs.keys(), scorer=fuzz.ratio)
-        print(best_match + " " + str(score))
-        if score >= 90:
-            return os.path.join(src_dir, sanitized_dirs[best_match])
-        
+                    best_match, score = process.extractOne(actual_title, [largest_file], scorer=fuzz.ratio)
+                    if score >= 90:
+                        return dir_path
+
     except Exception as e:
         print(f"Error finding best match: {e}")
     return None
