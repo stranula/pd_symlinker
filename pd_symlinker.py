@@ -172,7 +172,9 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
     for entry in catalog_data:
         try:
             eid = entry['EID']
-            if eid in processed_items:
+            torrent_dir_name = entry['Torrent File Name']
+            
+            if torrent_dir_name in processed_items:
                 continue
 
             title = entry['Title']
@@ -184,7 +186,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             grandparent_title = entry['GrandParentTitle']
             grandparent_type = entry['GrandParentType']
             grandparent_year = entry['GrandParentYear']
-            torrent_dir_name = entry['Torrent File Name']
             actual_title = entry['Actual Title']
 
             if type_ == 'movie':
@@ -243,7 +244,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 # TV show handling code
                 base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
                 base_year = grandparent_year if grandparent_year else parent_year if parent_year else year
-                tmdb_id = extract_id(entry.get('GrandParentEID')) if entry.get('GrandParentEID') else extract_id(entry.get('ParentEID')) if entry.get('ParentEID') else extract_id(entry.get('EID')) if entry.get('EID') else 'unknown'
+                tmdb_id = extract_id(entry.get('GrandParentEID')) if entry.get('GrandParentEID') else extract_id(entry.get('ParentEID')) if entry.get('ParentEID')) else extract_id(entry.get('EID')) if entry.get('EID') else 'unknown'
 
                 if f"({base_year})" in base_title:
                     folder_name = f"{base_title} {{tmdb-{tmdb_id}}}"
@@ -303,13 +304,11 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         else:
                             print(f"Symlink already exists: {target_file_path}")
 
-            new_processed_items.add(eid)
+            new_processed_items.add(torrent_dir_name)
         except Exception as e:
             print(f"Error processing entry: {e}")
 
     write_processed_items(processed_items_file, new_processed_items)
-
-
 
 def create_symlinks():
     print("create_symlinks function called.")
