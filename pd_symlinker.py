@@ -244,7 +244,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 # TV show handling code
                 base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
                 base_year = grandparent_year if grandparent_year else parent_year if parent_year else year
-                tmdb_id = extract_id(entry.get('GrandParentEID')) if entry.get('GrandParentEID') else extract_id(entry.get('ParentEID')) if entry.get('ParentEID')) else extract_id(entry.get('EID')) if entry.get('EID') else 'unknown'
+                tmdb_id = extract_id(entry.get('GrandParentEID')) if entry.get('GrandParentEID') else extract_id(entry.get('ParentEID')) if entry.get('ParentEID') else extract_id(entry.get('EID')) if entry.get('EID') else 'unknown'
 
                 if f"({base_year})" in base_title:
                     folder_name = f"{base_title} {{tmdb-{tmdb_id}}}"
