@@ -235,19 +235,21 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
                 if largest_file:
                     file_ext = os.path.splitext(largest_file)[1]
+                    # Check if symlink exists before extracting resolution
+                    target_file_name_without_resolution = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}{file_ext}"
+                    target_file_path_without_resolution = os.path.join(target_folder, clean_filename(target_file_name_without_resolution))
+                    print(f"Checking for symlink without resolution: {target_file_path_without_resolution}")
+                    if os.path.exists(target_file_path_without_resolution):
+                        print(f"Symlink already exists (ignoring resolution): {target_file_path_without_resolution}")
+                        continue
+
                     resolution = extract_resolution(largest_file, parent_folder_name=torrent_dir_path, file_path=os.path.join(torrent_dir_path, largest_file))
-                    
-                    if resolution == 'unknown':
-                        # Check if symlink exists ignoring resolution
-                        if symlink_exists_ignoring_resolution(target_folder, f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}", file_ext):
-                            print(f"Symlink already exists (ignoring resolution): {target_file_path}")
-                            continue
                     
                     target_file_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} [{resolution}]{file_ext}"
                     target_file_name = clean_filename(target_file_name)
                     target_file_path = os.path.join(target_folder, target_file_name)
                     
-                    largest_file_path = os.path.join(torrent_dir_path, largest_file)
+                    print(f"Checking for symlink with resolution: {target_file_path}")
                     if not os.path.exists(target_file_path):
                         try:
                             # Create relative symlink
@@ -300,23 +302,25 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         season_folder = f"Season {season}"
                         episode_identifier = f"S{season}E{episode}"
 
-                        resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
-                        if resolution == 'unknown':
-                            if symlink_exists_ignoring_resolution(target_folder_season, f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier}", file_ext):
-                                print(f"Symlink already exists (ignoring resolution): {target_file_path}")
-                                continue
+                        # Check if symlink exists before extracting resolution
+                        target_file_name_without_resolution = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier}{file_ext}"
+                        target_folder_season = os.path.join(target_folder, season_folder)
+                        target_file_path_without_resolution = os.path.join(target_folder_season, clean_filename(target_file_name_without_resolution))
+                        print(f"Checking for symlink without resolution: {target_file_path_without_resolution}")
+                        if os.path.exists(target_file_path_without_resolution):
+                            print(f"Symlink already exists (ignoring resolution): {target_file_path_without_resolution}")
+                            continue
 
+                        resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
                         target_file_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier} [{resolution}]{file_ext}"
                         target_folder_season = os.path.join(target_folder, season_folder)
                         if not os.path.exists(target_folder_season):
                             os.makedirs(target_folder_season, exist_ok=True)
 
-                        target_file_path = os.path.join(target_folder_season, target_file_name)
-                        target_file_name = clean_filename(target_file_name)
+                        target_file_path = os.path.join(target_folder_season, clean_filename(target_file_name))
 
-                        if not os.path.exists(file_path):
-                            print(f"Source file does not exist: {file_path}")
-                        elif not os.path.exists(target_file_path):
+                        print(f"Checking for symlink with resolution: {target_file_path}")
+                        if not os.path.exists(target_file_path):
                             try:
                                 # Create relative symlink
                                 relative_source_path = os.path.relpath(file_path, os.path.dirname(target_file_path))
