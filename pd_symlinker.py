@@ -48,6 +48,7 @@ def extract_resolution(name, parent_folder_name=None, file_path=None):
                     return f"{width}x{height}"
         except Exception as e:
             print(f"Error getting resolution with MoviePy: {e}")
+            return 'unknown'
         return None
     return None
 
@@ -224,7 +225,14 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 if largest_file:
                     file_ext = os.path.splitext(largest_file)[1]
                     resolution = extract_resolution(largest_file, parent_folder_name=torrent_dir_path, file_path=os.path.join(torrent_dir_path, largest_file))
-                    target_file_name = f"{base_title}  ({base_year}) {{tmdb-{tmdb_id}}} [{resolution}]{file_ext}"
+                    if resolution == 'unknown':
+                        target_file_name_without_resolution = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}{file_ext}"
+                        target_file_path_without_resolution = os.path.join(target_folder, target_file_name_without_resolution)
+                        if os.path.exists(target_file_path_without_resolution):
+                            print(f"Symlink already exists (ignoring resolution): {target_file_path_without_resolution}")
+                            continue
+                    
+                    target_file_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} [{resolution}]{file_ext}"
                     target_file_name = clean_filename(target_file_name)
                     target_file_path = os.path.join(target_folder, target_file_name)
                     
@@ -282,8 +290,14 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         episode_identifier = f"S{season}E{episode}"
 
                         resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
-                        target_file_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier} [{resolution}]{file_ext}"
+                        if resolution == 'unknown':
+                            target_file_name_without_resolution = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier}{file_ext}"
+                            target_file_path_without_resolution = os.path.join(target_folder_season, target_file_name_without_resolution)
+                            if os.path.exists(target_file_path_without_resolution):
+                                print(f"Symlink already exists (ignoring resolution): {target_file_path_without_resolution}")
+                                continue
 
+                        target_file_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier} [{resolution}]{file_ext}"
                         target_folder_season = os.path.join(target_folder, season_folder)
                         if not os.path.exists(target_folder_season):
                             os.makedirs(target_folder_season, exist_ok=True)
