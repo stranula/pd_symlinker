@@ -235,6 +235,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
                 if largest_file:
                     file_ext = os.path.splitext(largest_file)[1]
+                    
                     # Check if symlink exists before extracting resolution
                     target_file_name_without_resolution = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}{file_ext}"
                     target_file_path_without_resolution = os.path.join(target_folder, clean_filename(target_file_name_without_resolution))
