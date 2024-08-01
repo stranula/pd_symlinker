@@ -8,7 +8,6 @@ from colorama import init
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 from moviepy.editor import VideoFileClip
-import glob
 
 # Constants
 DEFAULT_CATALOG_PATH = '/catalog/catalog.csv'
@@ -49,7 +48,6 @@ def extract_resolution(name, parent_folder_name=None, file_path=None):
                     return f"{width}x{height}"
         except Exception as e:
             print(f"Error getting resolution with MoviePy: {e}")
-            return 'unknown'
         return None
     return None
 
@@ -164,18 +162,6 @@ def extract_season_episode(file_name):
             return season, episode
     return None, None
 
-def symlink_exists_with_wildcard(base_path, base_name, file_ext, season_episode=None):
-    """
-    Check if a symlink exists for the given base path and name, using a wildcard for the resolution.
-    """
-    if season_episode:
-        base_name_pattern = f"{base_name} - {season_episode} [*]{file_ext}"
-    else:
-        base_name_pattern = f"{base_name} [*]{file_ext}"
-    target_pattern = os.path.join(base_path, clean_filename(base_name_pattern))
-    matching_files = glob.glob(target_pattern)
-    return len(matching_files) > 0
-
 def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_path, processed_items_file):
     catalog_data = read_catalog_csv(catalog_path)
     processed_items = read_processed_items(processed_items_file)
@@ -238,17 +224,11 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 if largest_file:
                     file_ext = os.path.splitext(largest_file)[1]
                     resolution = extract_resolution(largest_file, parent_folder_name=torrent_dir_path, file_path=os.path.join(torrent_dir_path, largest_file))
-
-                    if resolution == 'unknown':
-                        # Check if symlink exists with wildcard resolution
-                        if symlink_exists_with_wildcard(target_folder, f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}", file_ext):
-                            print(f"Symlink already exists with wildcard resolution: {target_folder}")
-                            continue
-
-                    target_file_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} [{resolution}]{file_ext}"
+                    target_file_name = f"{base_title}  ({base_year}) {{tmdb-{tmdb_id}}} [{resolution}]{file_ext}"
                     target_file_name = clean_filename(target_file_name)
                     target_file_path = os.path.join(target_folder, target_file_name)
-
+                    
+                    largest_file_path = os.path.join(torrent_dir_path, largest_file)
                     if not os.path.exists(target_file_path):
                         try:
                             # Create relative symlink
@@ -302,21 +282,18 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         episode_identifier = f"S{season}E{episode}"
 
                         resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
-
-                        if resolution == 'unknown':
-                            # Check if symlink exists with wildcard resolution
-                            if symlink_exists_with_wildcard(target_folder, f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier}", file_ext):
-                                print(f"Symlink already exists with wildcard resolution: {target_folder}")
-                                continue
-
                         target_file_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier} [{resolution}]{file_ext}"
+
                         target_folder_season = os.path.join(target_folder, season_folder)
                         if not os.path.exists(target_folder_season):
                             os.makedirs(target_folder_season, exist_ok=True)
 
-                        target_file_path = os.path.join(target_folder_season, clean_filename(target_file_name))
+                        target_file_path = os.path.join(target_folder_season, target_file_name)
+                        target_file_name = clean_filename(target_file_name)
 
-                        if not os.path.exists(target_file_path):
+                        if not os.path.exists(file_path):
+                            print(f"Source file does not exist: {file_path}")
+                        elif not os.path.exists(target_file_path):
                             try:
                                 # Create relative symlink
                                 relative_source_path = os.path.relpath(file_path, os.path.dirname(target_file_path))
@@ -327,14 +304,11 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         else:
                             print(f"Symlink already exists: {target_file_path}")
 
-            # Add torrent_dir_name to the set of processed items
             new_processed_items.add(torrent_dir_name)
-            # Write the updated set of processed items to file after processing each entry
-            write_processed_items(processed_items_file, new_processed_items)
-            print(f"Processed {torrent_dir_name}")
-
         except Exception as e:
             print(f"Error processing entry: {e}")
+
+    write_processed_items(processed_items_file, new_processed_items)
 
 def create_symlinks():
     print("create_symlinks function called.")
