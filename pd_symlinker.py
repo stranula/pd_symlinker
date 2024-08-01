@@ -304,11 +304,14 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         else:
                             print(f"Symlink already exists: {target_file_path}")
 
+            # Add torrent_dir_name to the set of processed items
             new_processed_items.add(torrent_dir_name)
+            # Write the updated set of processed items to file after processing each entry
+            write_processed_items(processed_items_file, new_processed_items)
+            print(f"Processed {torrent_dir_name}")
+
         except Exception as e:
             print(f"Error processing entry: {e}")
-
-    write_processed_items(processed_items_file, new_processed_items)
 
 def create_symlinks():
     print("create_symlinks function called.")
