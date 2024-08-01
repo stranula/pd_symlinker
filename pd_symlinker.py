@@ -281,10 +281,17 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         season_folder = f"Season {season}"
                         episode_identifier = f"S{season}E{episode}"
 
+                        # Check if a symlink with any resolution already exists
+                        target_folder_season = os.path.join(target_folder, season_folder)
+                        existing_files = os.listdir(target_folder_season) if os.path.exists(target_folder_season) else []
+                        episode_pattern = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier} ["
+                        if any(f.startswith(episode_pattern) and f.endswith(file_ext) for f in existing_files):
+                            print(f"Symlink for {episode_identifier} already exists. Skipping file: {file_name}")
+                            continue
+
                         resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
                         target_file_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier} [{resolution}]{file_ext}"
 
-                        target_folder_season = os.path.join(target_folder, season_folder)
                         if not os.path.exists(target_folder_season):
                             os.makedirs(target_folder_season, exist_ok=True)
 
