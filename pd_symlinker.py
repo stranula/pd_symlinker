@@ -237,18 +237,18 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
                 if largest_file:
                     file_ext = os.path.splitext(largest_file)[1]
-
-                    # Check if symlink exists with wildcard resolution
-                    if symlink_exists_with_wildcard(target_folder, f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}", file_ext):
-                        print(f"Symlink already exists with wildcard resolution: {target_folder}")
-                        continue
-
                     resolution = extract_resolution(largest_file, parent_folder_name=torrent_dir_path, file_path=os.path.join(torrent_dir_path, largest_file))
-                    
+
+                    if resolution == 'unknown':
+                        # Check if symlink exists with wildcard resolution
+                        if symlink_exists_with_wildcard(target_folder, f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}", file_ext):
+                            print(f"Symlink already exists with wildcard resolution: {target_folder}")
+                            continue
+
                     target_file_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} [{resolution}]{file_ext}"
                     target_file_name = clean_filename(target_file_name)
                     target_file_path = os.path.join(target_folder, target_file_name)
-                    
+
                     if not os.path.exists(target_file_path):
                         try:
                             # Create relative symlink
@@ -301,12 +301,14 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         season_folder = f"Season {season}"
                         episode_identifier = f"S{season}E{episode}"
 
-                        # Check if symlink exists with wildcard resolution
-                        if symlink_exists_with_wildcard(target_folder, f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier}", file_ext):
-                            print(f"Symlink already exists with wildcard resolution: {target_folder}")
-                            continue
-
                         resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
+
+                        if resolution == 'unknown':
+                            # Check if symlink exists with wildcard resolution
+                            if symlink_exists_with_wildcard(target_folder, f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier}", file_ext):
+                                print(f"Symlink already exists with wildcard resolution: {target_folder}")
+                                continue
+
                         target_file_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier} [{resolution}]{file_ext}"
                         target_folder_season = os.path.join(target_folder, season_folder)
                         if not os.path.exists(target_folder_season):
