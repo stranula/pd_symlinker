@@ -26,3 +26,5 @@ services:
     security_opt:
       - apparmor:unconfined    
       - no-new-privileges
+    entrypoint: ["/entrypoint.sh"]
+    command: ["python", "folder_monitor.py"]  # Replace with your actual command
