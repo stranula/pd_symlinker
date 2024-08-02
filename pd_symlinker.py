@@ -163,10 +163,6 @@ def extract_season_episode(file_name):
     return None, None
 
 def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_path, processed_items_file):
-    if not os.path.exists(src_dir):
-        print(f"Source directory '{src_dir}' does not exist.")
-        return
-
     catalog_data = read_catalog_csv(catalog_path)
     processed_items = read_processed_items(processed_items_file)
     new_processed_items = set(processed_items)
