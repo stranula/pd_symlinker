@@ -325,6 +325,11 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
 def create_symlinks():
     print("create_symlinks function called.")
+    print(src_dir)
+    print(dest_dir)
+    print(dest_dir_movies)
+    print(DEFAULT_CATALOG_PATH)
+    print(PROCESSED_ITEMS_TILE)
     try:
         create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, DEFAULT_CATALOG_PATH, PROCESSED_ITEMS_FILE)
     except Exception as e:
