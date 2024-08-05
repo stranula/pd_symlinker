@@ -173,20 +173,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
     new_processed_items = set(processed_items)
 
     print(f"Catalog data read from {catalog_path}")
-    
-        # Get all directories in the source directory
-    all_dirs = set(os.listdir(src_dir))
-
-    # Get all torrent directories listed in the catalog
-    catalog_dirs = set(entry['Torrent File Name'] for entry in catalog_data)
-
-    # Identify unaccounted directories
-    unaccounted_dirs = all_dirs - catalog_dirs - processed_items
-
-    for unaccounted_dir in unaccounted_dirs:
-        print(f"Processing unaccounted directory: {unaccounted_dir}")
-        asyncio.run(handle_unaccounted_directory(unaccounted_dir, dest_dir_movies))
-        new_processed_items.add(unaccounted_dir)
 
     for entry in catalog_data:
         try:
@@ -332,7 +318,21 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             new_processed_items.add(torrent_dir_name)
         except Exception as e:
             print(f"Error processing entry: {e}")
+      
+    # Get all directories in the source directory
+    all_dirs = set(os.listdir(src_dir))
 
+    # Get all torrent directories listed in the catalog
+    catalog_dirs = set(entry['Torrent File Name'] for entry in catalog_data)
+
+    # Identify unaccounted directories
+    unaccounted_dirs = all_dirs - catalog_dirs - processed_items - new_processed_items
+
+    for unaccounted_dir in unaccounted_dirs:
+        print(f"Processing unaccounted directory: {unaccounted_dir}")
+        asyncio.run(handle_unaccounted_directory(unaccounted_dir, dest_dir_movies))
+        new_processed_items.add(unaccounted_dir)
+    
     write_processed_items(processed_items_file, new_processed_items)
 
 
