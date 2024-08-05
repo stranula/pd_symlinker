@@ -74,7 +74,7 @@ class FolderMonitor:
 if __name__ == '__main__':
     print("Running Startup Scan")
     create_symlinks()
-    folder_to_monitor = os.getenv('SRC_DIR', '/data/torrents')
+    folder_to_monitor = os.getenv('SRC_DIR')
     print("Monitoring Folder: " + folder_to_monitor)
     monitor = FolderMonitor(folder_to_monitor)
     monitor.run()
