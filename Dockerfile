@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python-Levenshtein
+FROM python:3.11-slim
 
 # Set the working directory
 WORKDIR /app
