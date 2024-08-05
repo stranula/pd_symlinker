@@ -50,6 +50,8 @@ def are_similar(folder_name, show_name, threshold=0.8):
     #log_message('DEBUG', f"Name 1: {folder_name}, Name 2: {show_name}, Similarity = {similarity >= threshold}")
     return similarity >= threshold
 
+async def process_unaccounted_folder(folder_path, dest_dir):
+    await create_symlinks(folder_path, dest_dir, force=True, split=False)
 
 def save_link(data, file_path):
     with open(file_path, 'wb') as f:
