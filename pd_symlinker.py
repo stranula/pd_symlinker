@@ -200,7 +200,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             torrent_dir_name = entry['Torrent File Name']
             
             if torrent_dir_name in processed_items:
-                print("Already Processed")
+                # print("Already Processed")
                 continue
 
             title = entry['Title']
