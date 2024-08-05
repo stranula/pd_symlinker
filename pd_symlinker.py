@@ -8,6 +8,9 @@ from colorama import init
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 from moviepy.editor import VideoFileClip
+import asyncio
+from organisemedia import process_unaccounted_folder
+
 
 # Constants
 DEFAULT_CATALOG_PATH = '/catalog/catalog.csv'
@@ -206,7 +209,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
                 torrent_dir_path = find_best_match(torrent_dir_name, actual_title, src_dir)
                 if not torrent_dir_path:
-                    print(f"No matching directory found for {torrent_dir_name} or {actual_title}")
+                    print(f"No matching directory found for {torrent_dir_name} or {actual_title}. Processing with organisemedia logic.")
+                    asyncio.run(process_unaccounted_folder(os.path.join(src_dir, torrent_dir_name), dest_dir_movies))
                     continue
                 print(f"Processing torrent directory: {torrent_dir_path}")
 
@@ -262,7 +266,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
                 torrent_dir_path = find_best_match(torrent_dir_name, actual_title, src_dir)
                 if not torrent_dir_path:
-                    print(f"No matching directory found for {torrent_dir_name} or {actual_title}")
+                    print(f"No matching directory found for {torrent_dir_name} or {actual_title}. Processing with organisemedia logic.")
+                    asyncio.run(process_unaccounted_folder(os.path.join(src_dir, torrent_dir_name), dest_dir))
                     continue
                 print(f"Processing torrent directory: {torrent_dir_path}")
 
@@ -316,6 +321,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             print(f"Error processing entry: {e}")
 
     write_processed_items(processed_items_file, new_processed_items)
+
 
 def create_symlinks():
     print("create_symlinks function called.")
