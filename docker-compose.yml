@@ -8,11 +8,6 @@ services:
     tty: true        # docker run -t   
     environment:
       TZ: "your_timezone" # e.g., "America/New_York"
-      API_KEY: "your_tmdb_api_key"
-      SRC_DIR: "/data/torrents"
-      DEST_DIR: "/data/sorted"
-      CATALOG_PATH: "/catalog/catalog.csv"
-      PROCESSED_ITEMS_FILE: "/catalog/processed_items.txt"
     volumes:
       # Location of zurg folder to monitor
       - /path/to/src_dir:/data/torrents
