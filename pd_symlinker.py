@@ -265,6 +265,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         continue
 
                 torrent_dir_path = find_best_match(torrent_dir_name, actual_title, src_dir)
+                print(torrent_dir_path)
                 if not torrent_dir_path:
                     print(f"No matching directory found for {torrent_dir_name} or {actual_title}. Processing with organisemedia logic.")
                     asyncio.run(process_unaccounted_folder(os.path.join(src_dir, torrent_dir_name), dest_dir))
@@ -329,7 +330,7 @@ def create_symlinks():
     print(dest_dir)
     print(dest_dir_movies)
     print(DEFAULT_CATALOG_PATH)
-    print(PROCESSED_ITEMS_TILE)
+    print(PROCESSED_ITEMS_FILE)
     try:
         create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, DEFAULT_CATALOG_PATH, PROCESSED_ITEMS_FILE)
     except Exception as e:
