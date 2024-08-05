@@ -572,8 +572,6 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
     symlink_created = []
     movies_cache = defaultdict(list)
     api_key = os.getenv('API_KEY', '')
-    src_dir = os.getenv('SRC_DIR', '')
-    dest_dir = os.getenv('DEST_DIR', '')
     
     for root, dirs, files in os.walk(src_dir):
         for file in files:
