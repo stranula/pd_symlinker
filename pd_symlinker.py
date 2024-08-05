@@ -15,7 +15,7 @@ from organisemedia import process_unaccounted_folder
 # Constants
 DEFAULT_CATALOG_PATH = '/catalog/catalog.csv'
 PROCESSED_ITEMS_FILE = '/catalog/processed_items.txt'
-src_dir = SRC_DIR
+src_dir: os.getenv('SRC_DIR', ''),
 dest_dir = os.path.join(DEST_DIR, "shows")
 dest_dir_movies = os.path.join(DEST_DIR, "movies")
 
