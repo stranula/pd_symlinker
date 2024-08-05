@@ -534,13 +534,14 @@ async def process_movie_task(movie_name, movie_folder_name, src_file, dest_dir, 
     if os.path.isdir(src_file):
         shutil.copytree(src_file, dest_file, symlinks=True)
     else:
-        os.symlink(src_file, dest_file)
+        relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
+        os.symlink(relative_source_path, dest_file)
         existing_symlinks.add((src_file, dest_file))
         save_link(existing_symlinks, links_pkl)
     
     clean_destination = os.path.basename(dest_file)
     async with print_lock:
-        log_message("SUCCESS", f"Created symlink: {Fore.LIGHTCYAN_EX}{clean_destination} {Style.RESET_ALL}-> {src_file}")
+        log_message("SUCCESS", f"Created relative symlink: {Fore.LIGHTCYAN_EX}{clean_destination} {Style.RESET_ALL}-> {src_file}")
 
 async def process_movies_in_batches(movies_cache, batch_size=5, ignored_files=None):
     tasks = []
@@ -554,6 +555,12 @@ async def process_movies_in_batches(movies_cache, batch_size=5, ignored_files=No
         await asyncio.gather(*tasks)
 
     movies_cache.clear()
+
+def get_relative_symlink_path(source, destination):
+    source_dir = os.path.dirname(source)
+    destination_dir = os.path.dirname(destination)
+    relative_path = os.path.relpath(source_dir, destination_dir)
+    return os.path.join(relative_path, os.path.basename(source))
 
 async def create_symlinks(src_dir, dest_dir, force=False, split=False):
     print(src_dir)
@@ -699,7 +706,8 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
             if os.path.isdir(src_file):
                 shutil.copytree(src_file, dest_file, symlinks=True)
             else:
-                os.symlink(src_file, dest_file)
+                relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
+                os.symlink(relative_source_path, dest_file)
                 existing_symlinks.add((src_file, dest_file))
                 save_link(existing_symlinks, links_pkl)
                 symlink_created.append(dest_file)

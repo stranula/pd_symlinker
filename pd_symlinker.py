@@ -328,6 +328,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
     # Identify unaccounted directories
     unaccounted_dirs = all_dirs - catalog_dirs - processed_items - new_processed_items
     
+    print(unaccounted_dirs)
+    
     if unaccounted_dirs:
         for unaccounted_dir in unaccounted_dirs:
             print(f"Processing unaccounted directory: {unaccounted_dir}")
