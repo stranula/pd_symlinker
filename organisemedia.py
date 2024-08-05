@@ -13,8 +13,6 @@ from colorama import init, Fore, Style
 
 init(autoreset=True)
 
-
-SETTINGS_FILE = 'settings.json'
 links_pkl = 'symlinks.pkl'
 ignored_file = 'ignored.pkl'
 _api_cache = {}
@@ -73,45 +71,6 @@ def load_ignored():
         with open(ignored_file, 'rb') as f:
             return pickle.load(f)
     return set()
-
-def save_settings(api_key, src_dir, dest_dir):
-    settings = {
-        'api_key': api_key,
-        'src_dir': src_dir,
-        'dest_dir': dest_dir,
-    }
-    with open(SETTINGS_FILE, 'w') as file:
-        json.dump(settings, file, indent=4)
-
-def get_api_key():
-    if os.path.exists(SETTINGS_FILE):
-        with open(SETTINGS_FILE, 'r') as file:
-            settings = json.load(file)
-            if settings['api_key']:
-                return settings.get('api_key')
-            else:
-                return None
-    return None
-
-def prompt_for_api_key():
-    api_key = input("Please enter your TMDb API key: ")
-    
-    try:
-        with open(SETTINGS_FILE, 'r') as file:
-            settings = json.load(file)
-    except FileNotFoundError:
-        settings = {}
-    
-    settings['api_key'] = api_key
-    
-    with open(SETTINGS_FILE, 'w') as file:
-        json.dump(settings, file, indent=4)
-
-def prompt_for_settings(api_key):
-    src_dir = input("Enter the source directory path: ")
-    dest_dir = input("Enter the destination directory path: ")
-    save_settings(api_key, src_dir, dest_dir)
-    return src_dir, dest_dir
 
 def get_settings():
     if os.path.exists(SETTINGS_FILE):
@@ -553,8 +512,6 @@ async def process_anime(file, pattern1, pattern2, split=False, force=False):
         show_name = show_name.replace('/', '')
         return show_name, season_number, name, showdir
         
-
-
 async def process_movie_task(movie_name, movie_folder_name, src_file, dest_dir, existing_symlinks, links_pkl, ignored_files):
     movie_name, ext = await process_movie(movie_name, movie_folder_name)
     movie_name = movie_name.replace("/", " ")
@@ -607,6 +564,9 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
     ignored_files = load_ignored()
     symlink_created = []
     movies_cache = defaultdict(list)
+    api_key = os.getenv('API_KEY', '')
+    src_dir = os.getenv('SRC_DIR', '')
+    dest_dir = os.getenv('DEST_DIR', '')
     
     for root, dirs, files in os.walk(src_dir):
         for file in files:
