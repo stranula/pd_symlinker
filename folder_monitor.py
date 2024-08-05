@@ -2,6 +2,9 @@ import time
 from watchdog.observers.polling import PollingObserver as Observer
 from watchdog.events import FileSystemEventHandler
 from pd_symlinker import create_symlinks
+import os
+
+src_dir = os.getenv('SRC_DIR')
 
 class FolderMonitor:
     def __init__(self, folder_to_monitor):
@@ -33,7 +36,7 @@ class FolderMonitor:
 if __name__ == '__main__':
     print("Running Startup Scan")
     create_symlinks()
-    folder_to_monitor = "/Zurg_Stranula/pd_zurg_mnt_stranula/torrents"
+    folder_to_monitor = src_dir
     print("Monitoring Folder: " + folder_to_monitor)
     monitor = FolderMonitor(folder_to_monitor)
     monitor.run()
