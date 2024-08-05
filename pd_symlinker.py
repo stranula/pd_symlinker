@@ -74,7 +74,7 @@ def read_catalog_csv(csv_path):
         print(f"Error reading CSV file: {e}")
         return []
 
-def extract_id(eid_string, preferred='tmdb', fallback='imdb'):
+def extract_id(eid_string, preferred='imdb', fallback='tmdb'):
     ids = eid_string.split(', ')
     for id_str in ids:
         if preferred in id_str:
