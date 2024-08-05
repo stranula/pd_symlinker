@@ -5,3 +5,4 @@ moviepy
 asyncio
 aioconsole
 aiohttp
+python-Levenshtein
