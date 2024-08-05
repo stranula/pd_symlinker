@@ -13,9 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # RUN chmod +x /entrypoint.sh
 # ENTRYPOINT ["/entrypoint.sh"]
 
-# Install watchdog
-RUN pip install watchdog
-
 # Copy the current directory contents into the container at /app
 COPY . /app
 
