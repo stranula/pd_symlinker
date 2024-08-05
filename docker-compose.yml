@@ -8,14 +8,10 @@ services:
     tty: true        # docker run -t   
     environment:
       TZ: "America/New_York" # e.g., "America/New_York"
-      SRC_DIR: "/mnt/xyz/abc/torrents"
-      DEST_DIR: "/mnt/xyz/abc/sorted"
-      CATALOG_PATH: "/mnt/xyz/abc/catalog"
+      TOP_FOLDER: "/folder/above/zurg_mnt"
+      SRC_DIR: "/top_folder/zurg_mnt/torrents"
+      DEST_DIR: "/top_folder/sorted"
     volumes:
-      # Location of zurg folder to monitor
-      - ${SRC_DIR}:/mnt
-      # Location for sorted items
-      - ${DEST_DIR}:/mnt
       # Location for Plex_Debrid catalog.csv
       - ${CATALOG_PATH}:/catalog
     devices:
