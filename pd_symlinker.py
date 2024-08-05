@@ -15,9 +15,11 @@ from organisemedia import process_unaccounted_folder
 # Constants
 DEFAULT_CATALOG_PATH = '/catalog/catalog.csv'
 PROCESSED_ITEMS_FILE = '/catalog/processed_items.txt'
-src_dir = '/data/torrents/'
-dest_dir = '/data/sorted/shows/'
-dest_dir_movies = '/data/sorted/movies/'
+SRC_DIR = os.getenv('SRC_DIR', '')
+DEST_DIR = os.getenv('DEST_DIR', '')
+src_dir = SRC_DIR
+dest_dir = os.path.join(DEST_DIR, "shows")
+dest_dir_movies = os.path.join(DEST_DIR, "movies")
 
 # Initialize colorama
 init(autoreset=True)
