@@ -1,24 +1,25 @@
-version: "0.1"
+version: "3.8"
 
 services:
   pd_symlinker:
     container_name: pd_symlinker
     image: stranulax/pd_symlinker:latest
-    ## Optionally, specify a specific version of pd_zurg
-    # image: iampuid0/pd_zurg:2.0.0
     stdin_open: true # docker run -i
-    tty: true        # docker run -t    
-    volumes:
-      ## Location of zurg folder to monitor 
-      - /pd_zurg/data/torrents:/data/torrents
-      ## Location for sorted shows
-      - /pd_zurg/data/sorted/shows:/data/sorted/shows
-      ## Location for sorted movies
-      - /pd_zurg/data/sorted/movies:/data/sorted/movies
-      ## Location for Plex_Debrid catalog.csv
-      - /appdata/pd_zurg/RD:/catalog
+    tty: true        # docker run -t   
     environment:
-      - TZ=
+      TZ: "your_timezone" # e.g., "America/New_York"
+      API_KEY: "your_tmdb_api_key"
+      SRC_DIR: "/data/torrents"
+      DEST_DIR: "/data/sorted"
+      CATALOG_PATH: "/catalog/catalog.csv"
+      PROCESSED_ITEMS_FILE: "/catalog/processed_items.txt"
+    volumes:
+      # Location of zurg folder to monitor
+      - /path/to/src_dir:/data/torrents
+      # Location for sorted items
+      - /path/to/dest_dir:/data/sorted
+      # Location for Plex_Debrid catalog.csv
+      - /path/to/catalog:/catalog
     devices:
       - /dev/fuse:/dev/fuse:rwm
     cap_add:
@@ -27,4 +28,4 @@ services:
       - apparmor:unconfined    
       - no-new-privileges
     entrypoint: ["/entrypoint.sh"]
-    command: ["python", "folder_monitor.py"]  # Replace with your actual command
+    command: ["python", "pd_symlinker.py"]  # Replace with your actual command
