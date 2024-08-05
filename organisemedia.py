@@ -117,7 +117,13 @@ def get_settings():
     if os.path.exists(SETTINGS_FILE):
         with open(SETTINGS_FILE, 'r') as file:
             return json.load(file)
-    return {}
+    
+    settings = {
+        'api_key': os.getenv('API_KEY', ''),
+        'src_dir': os.getenv('SRC_DIR', ''),
+        'dest_dir': os.getenv('DEST_DIR', ''),
+    }
+    return settings
 
 
 def get_moviedb_id(imdbid):
@@ -753,13 +759,13 @@ async def main():
     parser.add_argument("--loop", action="store_true", help="When this is used, the script will periodically scan the source directory and automatically choose the first result when querying movies and/or shows")
     args = parser.parse_args()
     force = False
-    apikey = get_api_key()
+    apikey = settings['api_key']
     
     if args.split_dirs:
-        if apikey is None or apikey == "" or apikey == "null":
+        if not apikey:
             apikey = prompt_for_api_key()
         
-    if 'src_dir' not in settings or 'dest_dir' not in settings:
+    if not settings['src_dir'] or not settings['dest_dir']:
         log_message("INFO", f"Missing configuration in settings.json. Please provide necessary inputs.{Style.RESET_ALL}")
         src_dir, dest_dir = prompt_for_settings(apikey)
     else:
