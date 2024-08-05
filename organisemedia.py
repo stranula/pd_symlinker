@@ -84,7 +84,6 @@ def get_settings():
     }
     return settings
 
-
 def get_moviedb_id(imdbid):
     url = f"https://v3-cinemeta.strem.io/meta/series/{imdbid}.json"
     try:
@@ -227,7 +226,6 @@ async def get_movie_info(title, year=None, force=False):
         except aiohttp.ClientError as e:
             log_message('ERROR', f"Error fetching movie information: {e}")
             return f'{title} {year}'
-
 
 async def get_series_info(series_name, year=None, split=False, force=False):
     global _api_cache
@@ -671,7 +669,7 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
                 if not resolution:
                     resolution = extract_resolution(parent_folder_name)
                     if resolution is not None:
-                        resolution = f"{resolution}"
+                        resolution = f"[{resolution}]"
                         
                 file_name = re.search(r'(^.*S\d{2}E\d{2})', new_name)
                 if file_name:
@@ -686,7 +684,7 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
                     new_name = new_name.rstrip() + ext
 
             new_name = new_name.replace('/', '')
-            dest_path = os.path.join(dest_dir, media_dir, show_folder, season_folder)
+            dest_path = os.path.join(dest_dir, show_folder, season_folder)
                     
             os.makedirs(dest_path, exist_ok=True)
             dest_file = os.path.join(dest_path, new_name)

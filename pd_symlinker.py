@@ -197,11 +197,11 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 # Movie handling code
                 base_title = title
                 base_year = year
-                tmdb_id = extract_id(entry['EID']) if entry['EID'] else 'unknown'
+                imdb_id = extract_id(entry['EID']) if entry['EID'] else 'unknown'
                 if f"({base_year})" in base_title:
-                    folder_name = f"{base_title} {{tmdb-{tmdb_id}}}"
+                    folder_name = f"{base_title} {{tmdb-{imdb_id}}}"
                 else:
-                    folder_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}"
+                    folder_name = f"{base_title} ({base_year}) {{tmdb-{imdb_id}}}"
                 target_folder = os.path.join(dest_dir_movies, folder_name)
 
                 # Ensure target folder exists
@@ -228,7 +228,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 if largest_file:
                     file_ext = os.path.splitext(largest_file)[1]
                     resolution = extract_resolution(largest_file, parent_folder_name=torrent_dir_path, file_path=os.path.join(torrent_dir_path, largest_file))
-                    target_file_name = f"{base_title}  ({base_year}) {{tmdb-{tmdb_id}}} [{resolution}]{file_ext}"
+                    target_file_name = f"{base_title}  ({base_year}) {{tmdb-{imdb_id}}} [{resolution}]{file_ext}"
                     target_file_name = clean_filename(target_file_name)
                     target_file_path = os.path.join(target_folder, target_file_name)
                     
@@ -248,12 +248,12 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 # TV show handling code
                 base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
                 base_year = grandparent_year if grandparent_year else parent_year if parent_year else year
-                tmdb_id = extract_id(entry.get('GrandParentEID')) if entry.get('GrandParentEID') else extract_id(entry.get('ParentEID')) if entry.get('ParentEID') else extract_id(entry.get('EID')) if entry.get('EID') else 'unknown'
+                imdb_id = extract_id(entry.get('GrandParentEID')) if entry.get('GrandParentEID') else extract_id(entry.get('ParentEID')) if entry.get('ParentEID') else extract_id(entry.get('EID')) if entry.get('EID') else 'unknown'
 
                 if f"({base_year})" in base_title:
-                    folder_name = f"{base_title} {{tmdb-{tmdb_id}}}"
+                    folder_name = f"{base_title} {{tmdb-{imdb_id}}}"
                 else:
-                    folder_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}}"
+                    folder_name = f"{base_title} ({base_year}) {{tmdb-{imdb_id}}}"
                 target_folder = os.path.join(dest_dir, folder_name)
 
                 if not os.path.exists(target_folder):
@@ -288,13 +288,13 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         # Check if a symlink with any resolution already exists
                         target_folder_season = os.path.join(target_folder, season_folder)
                         existing_files = os.listdir(target_folder_season) if os.path.exists(target_folder_season) else []
-                        episode_pattern = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier} ["
+                        episode_pattern = f"{base_title} ({base_year}) {{tmdb-{imdb_id}}} - {episode_identifier} ["
                         if any(f.startswith(episode_pattern) and f.endswith(file_ext) for f in existing_files):
                             print(f"Symlink for {episode_identifier} already exists. Skipping file: {file_name}")
                             continue
 
                         resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
-                        target_file_name = f"{base_title} ({base_year}) {{tmdb-{tmdb_id}}} - {episode_identifier} [{resolution}]{file_ext}"
+                        target_file_name = f"{base_title} ({base_year}) {{tmdb-{imdb_id}}} - {episode_identifier} [{resolution}]{file_ext}"
 
                         if not os.path.exists(target_folder_season):
                             os.makedirs(target_folder_season, exist_ok=True)
