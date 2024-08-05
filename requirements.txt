@@ -2,3 +2,6 @@ watchdog
 colorama
 fuzzywuzzy
 moviepy
+asyncio
+aioconsole
+aiohttp
