@@ -7,14 +7,17 @@ services:
     stdin_open: true # docker run -i
     tty: true        # docker run -t   
     environment:
-      TZ: "your_timezone" # e.g., "America/New_York"
+      TZ: "America/New_York" # e.g., "America/New_York"
+      SRC_DIR: "/mnt/xyz/abc/torrents"
+      DEST_DIR: "/mnt/xyz/abc/sorted"
+      CATALOG_PATH: "/mnt/xyz/abc/catalog"
     volumes:
       # Location of zurg folder to monitor
-      - /path/to/src_dir:/data/torrents
+      - ${SRC_DIR}:${SRC_DIR}
       # Location for sorted items
-      - /path/to/dest_dir:/data/sorted
+      - ${DEST_DIR}:${DEST_DIR}
       # Location for Plex_Debrid catalog.csv
-      - /path/to/catalog:/catalog
+      - ${CATALOG_PATH}:/catalog
     devices:
       - /dev/fuse:/dev/fuse:rwm
     cap_add:
