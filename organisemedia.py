@@ -120,8 +120,8 @@ def get_settings():
     
     settings = {
         'api_key': os.getenv('API_KEY', ''),
-        'src_dir': '/data/torrents',
-        'dest_dir': '/data/sorted',
+        'src_dir': os.getenv('SRC_DIR', ''),
+        'dest_dir': os.getenv('DEST_DIR', ''),
     }
     return settings
 
