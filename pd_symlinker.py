@@ -1,16 +1,13 @@
 import os
 import re
 import csv
-import subprocess
 import json
 from datetime import datetime
 from colorama import init
-from fuzzywuzzy import fuzz
-from fuzzywuzzy import process
+from fuzzywuzzy import fuzz, process
 from moviepy.editor import VideoFileClip
 import asyncio
 from organisemedia import process_unaccounted_folder
-
 
 # Constants
 DEFAULT_CATALOG_PATH = '/catalog/catalog.csv'
@@ -167,6 +164,15 @@ def extract_season_episode(file_name):
             return season, episode
     return None, None
 
+async def handle_unaccounted_directory(directory, dest_dir):
+    # Attempt to find best match
+    match = find_best_match(directory, directory, src_dir)
+    if match:
+        print(f"Found best match for {directory}: {match}")
+    else:
+        print(f"No match found for {directory}. Processing with organisemedia logic.")
+        await process_unaccounted_folder(os.path.join(src_dir, directory), dest_dir)
+
 def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_path, processed_items_file):
     catalog_data = read_catalog_csv(catalog_path)
     processed_items = read_processed_items(processed_items_file)
@@ -174,12 +180,26 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
     print(f"Catalog data read from {catalog_path}")
 
+    # Get all directories in the source directory
+    all_dirs = set(os.listdir(src_dir))
+
+    # Get all torrent directories listed in the catalog
+    catalog_dirs = set(entry['Torrent File Name'] for entry in catalog_data)
+
+    # Identify unaccounted directories
+    unaccounted_dirs = all_dirs - catalog_dirs
+
+    for unaccounted_dir in unaccounted_dirs:
+        print(f"Processing unaccounted directory: {unaccounted_dir}")
+        asyncio.run(handle_unaccounted_directory(unaccounted_dir, dest_dir_movies))
+
     for entry in catalog_data:
         try:
             eid = entry['EID']
             torrent_dir_name = entry['Torrent File Name']
             
             if torrent_dir_name in processed_items:
+                print("Already Processed")
                 continue
 
             title = entry['Title']
@@ -325,14 +345,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
     write_processed_items(processed_items_file, new_processed_items)
 
-
 def create_symlinks():
     print("create_symlinks function called.")
-    # print(src_dir)
-    # print(dest_dir)
-    # print(dest_dir_movies)
-    # print(DEFAULT_CATALOG_PATH)
-    # print(PROCESSED_ITEMS_FILE)
     try:
         create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, DEFAULT_CATALOG_PATH, PROCESSED_ITEMS_FILE)
     except Exception as e:
