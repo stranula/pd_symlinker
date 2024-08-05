@@ -599,6 +599,8 @@ async def process_movies_in_batches(movies_cache, batch_size=5, ignored_files=No
     movies_cache.clear()
 
 async def create_symlinks(src_dir, dest_dir, force=False, split=False):
+    print(src_dir)
+    print(dest_dir)
     os.makedirs(dest_dir, exist_ok=True)
     log_message('DEBUG', 'processing...')
     existing_symlinks = load_links(links_pkl)
