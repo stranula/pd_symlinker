@@ -178,8 +178,12 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
         try:
             eid = entry['EID']
             torrent_dir_name = entry['Torrent File Name']
+            actual_title_name = entry['Actual Title']
             
             if torrent_dir_name in processed_items:
+                continue
+            
+            if actual_title_name in processed_items:
                 continue
 
             title = entry['Title']
