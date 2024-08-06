@@ -560,8 +560,8 @@ def get_relative_symlink_path(source, destination):
 
 async def create_symlinks(src_dir, dest_dir, force=False, split=False):
     print(src_dir)
-    print(dest_dir)
-    os.makedirs(dest_dir, exist_ok=True)
+    DEST_DIR = os.getenv('DEST_DIR', '')
+    dest_dir = os.path.join(DEST_DIR, "shows")
     log_message('DEBUG', 'processing...')
     existing_symlinks = load_links(links_pkl)
     ignored_files = load_ignored()
@@ -603,8 +603,9 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
                     season_folder = f"Season {int(season_number):02d}"
                     is_anime = True
                 else:
-                    continue # you can comment this line to enable the processing of movies
+                    #continue # you can comment this line to enable the processing of movies
                     is_movie = True
+                    dest_dir_movies = os.path.join(DEST_DIR, "movies")
                     movie_folder_name = os.path.basename(root)
                     movies_cache[file].append((movie_folder_name, src_file, dest_dir, existing_symlinks, links_pkl))
                     if len(movies_cache) >= 1:
