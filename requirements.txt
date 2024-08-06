@@ -6,4 +6,3 @@ asyncio
 aioconsole
 aiohttp
 python-Levenshtein
-sqlite3
