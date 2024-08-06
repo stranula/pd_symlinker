@@ -414,7 +414,7 @@ def get_unique_filename(dest_path, new_name):
         counter += 1
     return unique_name
 
-async def process_movie(file, foldername, force=False):
+async def process_movie(file, foldername, force=True):
     path = f"/{foldername}"
     log_message("INFO", f"Current Movie file: {os.path.join(path, file)}")
     
