@@ -316,6 +316,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                             print(f"Symlink already exists: {target_file_path}")
 
             new_processed_items.add(torrent_dir_name)
+            
         except Exception as e:
             print(f"Error processing entry: {e}")
       
@@ -339,6 +340,9 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 new_processed_items.add(unaccounted_dir)
             else:
                 print(f"Skipping non-directory: {unaccounted_dir_path}")
+                
+    write_processed_items(processed_items_file, new_processed_items)
+
 
 
 def create_symlinks():
