@@ -329,9 +329,10 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
     # Get all torrent directories listed in the catalog
     catalog_dirs = set(entry['Torrent File Name'] for entry in catalog_data)
+    catalog_dirs_2 = set(entry['Actual Title'] for entry in catalog_data)
 
     # Identify unaccounted directories
-    unaccounted_dirs = all_dirs - catalog_dirs - processed_items
+    unaccounted_dirs = all_dirs - catalog_dirs - catalog_dirs_2 - processed_items
     
     print(f"Unaccounted directories: {unaccounted_dirs}")
     
