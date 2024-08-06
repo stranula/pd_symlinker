@@ -342,10 +342,11 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 print(f"Processing unaccounted directory: {unaccounted_dir_path}")
                 asyncio.run(process_unaccounted_folder(unaccounted_dir_path, dest_dir))
                 new_processed_items.add(unaccounted_dir)
+                write_processed_items(processed_items_file, new_processed_items)
             else:
                 print(f"Skipping non-directory: {unaccounted_dir_path}")
                 
-    write_processed_items(processed_items_file, new_processed_items)
+
 
 def create_symlinks():
     print("create_symlinks function called.")
