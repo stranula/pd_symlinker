@@ -569,6 +569,7 @@ def get_relative_symlink_path(source, destination):
 
 async def create_symlinks(src_dir, dest_dir, force=False, split=False):
     print(src_dir)
+    PROCESS_NON_PD_MOVIES = os.getenv('PROCESS_NON_PD_MOVIES', '')
     DEST_DIR = os.getenv('DEST_DIR', '')
     dest_dir = os.path.join(DEST_DIR, "shows")
     log_message('DEBUG', 'processing...')
@@ -613,13 +614,16 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
                     is_anime = True
                 else:
                     #continue # you can comment this line to enable the processing of movies
-                    is_movie = True
-                    dest_dir = os.path.join(DEST_DIR)
-                    movie_folder_name = os.path.basename(root)
-                    movies_cache[file].append((movie_folder_name, src_file, dest_dir, existing_symlinks, links_pkl))
-                    if len(movies_cache) >= 1:
-                        await process_movies_in_batches(movies_cache, ignored_files=ignored_files)
-                    continue
+                    if PROCESS_NON_PD_MOVIES == true:
+                        is_movie = True
+                        dest_dir = os.path.join(DEST_DIR)
+                        movie_folder_name = os.path.basename(root)
+                        movies_cache[file].append((movie_folder_name, src_file, dest_dir, existing_symlinks, links_pkl))
+                        if len(movies_cache) >= 1:
+                            await process_movies_in_batches(movies_cache, ignored_files=ignored_files)
+                        continue
+                    else:
+                        continue
 
             if not is_movie and not is_anime:
                 episode_identifier = episode_match.group(2)
