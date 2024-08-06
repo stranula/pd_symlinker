@@ -28,6 +28,7 @@ init(autoreset=True)
 
 def read_catalog_db():
     with db_lock:
+        print(DATABASE_PATH)
         conn = sqlite3.connect(DATABASE_PATH)
         c = conn.cursor()
         c.execute('SELECT * FROM catalog')
