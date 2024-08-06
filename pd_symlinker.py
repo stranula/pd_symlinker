@@ -346,7 +346,9 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             if os.path.isdir(unaccounted_dir_path):
                 print(f"Processing unaccounted directory: {unaccounted_dir_path}")
                 asyncio.run(process_unaccounted_folder(unaccounted_dir_path, dest_dir))
-                write_processed_items(processed_items_file, unaccounted_dir)
+                new_processed_items = set(processed_items)
+                new_processed_items.add(torrent_dir_name)
+                write_processed_items(processed_items_file, new_processed_items)
             else:
                 print(f"Skipping non-directory: {unaccounted_dir_path}")
                 
