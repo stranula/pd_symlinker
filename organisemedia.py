@@ -349,9 +349,7 @@ def format_multi_match(match):
     return f"S{parts[0]}E{parts[1]}-{parts[2].upper()}"
 
 def get_episode_details(series_id, episode_identifier, name, year):
-    
     details_url = f"https://v3-cinemeta.strem.io/meta/series/{series_id}.json"
-    #print(details_url)
     response = requests.get(details_url)
     if response.status_code != 200:
         raise Exception(f"Error getting series details: {response.status_code}")
@@ -370,7 +368,7 @@ def get_episode_details(series_id, episode_identifier, name, year):
     year = re.match(r'\b\d{4}\b', year).group()
     match = re.search(r'(S\d{2,3} ?E\d{2}\-E\d{2})', episode_identifier)
     if match:
-        return f"{name} - {episode_identifier.lower()}"
+        return f"{name} ({year}) {{imdb-{series_id}}} - {episode_identifier.upper()}"
         
     season = int(re.search(r'S(\d{2}) ?E\d{2}', episode_identifier, re.IGNORECASE).group(1))
     episode = int(re.search(r'S(\d{2}) ?E(\d{2,3})', episode_identifier, re.IGNORECASE).group(2))
@@ -385,9 +383,9 @@ def get_episode_details(series_id, episode_identifier, name, year):
                 title = video.get('name')
             else:
                 title = video.get('title')
-            return f"{show_name} ({year}) - s{season:02d}e{episode:02d} - {title}"
+            return f"{show_name} ({year}) {{imdb-{series_id}}} - S{season:02d}E{episode:02d} - {title}"
         
-    return f"{meta.get('name')} ({year}) - {episode_identifier.lower()}"
+    return f"{meta.get('name')} ({year}) {{imdb-{series_id}}} - {episode_identifier.upper()}"
 
 def extract_year(query):
     match = re.search(r'\((\d{4})\)$', query.strip())
@@ -677,11 +675,10 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
                 if re.search(r'\{(tmdb-\d+|imdb-tt\d+)\}', show_folder):
                     year = re.search(r'\((\d{4})\)', show_folder).group(1)
                     new_name = get_episode_details(showid, episode_identifier, show_folder, year)
-                
                 if resolution:
-                    new_name = new_name.rstrip() + " " + resolution + ext
-                else: 
-                    new_name = new_name.rstrip() + ext
+                    new_name = f"{new_name} [{resolution}] {ext}"
+                else:
+                    new_name = f"{new_name} {ext}"
 
             new_name = new_name.replace('/', '')
             dest_path = os.path.join(dest_dir, show_folder, season_folder)
