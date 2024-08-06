@@ -72,18 +72,6 @@ def load_ignored():
             return pickle.load(f)
     return set()
 
-def get_settings():
-    if os.path.exists(SETTINGS_FILE):
-        with open(SETTINGS_FILE, 'r') as file:
-            return json.load(file)
-    
-    settings = {
-        'api_key': os.getenv('API_KEY', ''),
-        'src_dir': os.getenv('SRC_DIR', ''),
-        'dest_dir': os.getenv('DEST_DIR', ''),
-    }
-    return settings
-
 def get_moviedb_id(imdbid):
     url = f"https://v3-cinemeta.strem.io/meta/series/{imdbid}.json"
     try:
@@ -547,7 +535,6 @@ async def process_movie_task(movie_name, movie_folder_name, src_file, dest_dir, 
     async with print_lock:
         log_message("SUCCESS", f"Created relative symlink: {Fore.LIGHTCYAN_EX}{clean_destination} {Style.RESET_ALL}-> {src_file}")
 
-
 async def process_movies_in_batches(movies_cache, batch_size=5, ignored_files=None):
     tasks = []
     for movie_name, movie_details in movies_cache.items():
@@ -727,48 +714,3 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
 
     save_ignored(ignored_files)
     return symlink_created
-
-async def main():
-    settings = get_settings()
-
-    parser = argparse.ArgumentParser(description="Create symlinks for files from src_dir in dest_dir.")
-    parser.add_argument("--split-dirs", action="store_true", help="Use separate directories for anime")
-    parser.add_argument("--loop", action="store_true", help="When this is used, the script will periodically scan the source directory and automatically choose the first result when querying movies and/or shows")
-    args = parser.parse_args()
-    force = False
-    apikey = settings['api_key']
-    
-    if args.split_dirs:
-        if not apikey:
-            apikey = prompt_for_api_key()
-        
-    if not settings['src_dir'] or not settings['dest_dir']:
-        log_message("INFO", f"Missing configuration in settings.json. Please provide necessary inputs.{Style.RESET_ALL}")
-        src_dir, dest_dir = prompt_for_settings(apikey)
-    else:
-        src_dir = settings['src_dir']
-        dest_dir = settings['dest_dir']
-        
-    if args.loop:
-        force = True
-        while True:
-            if await create_symlinks(src_dir, dest_dir, force, split=args.split_dirs):
-                log_message('SUCCESS', 'Attempting to update Plex Library sections')
-                command = ['python3', 'scan_plex.py', dest_dir]
-                try:
-                    subprocess.run(command, check=True)
-                except subprocess.CalledProcessError as e:
-                    log_message('ERROR', f"Error running scan_plex.py: {e}")
-            log_message('INFO', "Sleeping for 2 minutes before next run...")
-            time.sleep(120)
-    else:
-        if await create_symlinks(src_dir, dest_dir, force, split=args.split_dirs):
-            log_message('SUCCESS', 'Attempting to update Plex Library sections')
-            command = ['python3', 'scan_plex.py', dest_dir]
-            try:
-                subprocess.run(command, check=True)
-            except subprocess.CalledProcessError as e:
-                log_message('ERROR', f"Error running scan_plex.py: {e}")
-
-if __name__ == "__main__":
-    asyncio.run(main())
