@@ -10,6 +10,7 @@ from fuzzywuzzy import process
 from moviepy.editor import VideoFileClip
 import asyncio
 from organisemedia import process_unaccounted_folder
+import threading
 
 DATABASE_PATH = '/data/media_database.db'
 db_lock = threading.Lock()

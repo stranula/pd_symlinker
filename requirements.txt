@@ -6,5 +6,4 @@ asyncio
 aioconsole
 aiohttp
 python-Levenshtein
-threading
 sqlite3
