@@ -607,7 +607,7 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
                     is_movie = True
                     movie_folder_name = os.path.basename(root)
                     movies_cache[file].append((movie_folder_name, src_file, dest_dir, existing_symlinks, links_pkl))
-                    if len(movies_cache) >= 5:
+                    if len(movies_cache) >= 1:
                         await process_movies_in_batches(movies_cache, ignored_files=ignored_files)
                     continue
 
