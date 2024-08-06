@@ -322,7 +322,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
     write_processed_items(processed_items_file, new_processed_items)
     
-    new_processed_items = []
+    new_processed_items = set(processed_items)
     
     processed_items = read_processed_items(processed_items_file)
     

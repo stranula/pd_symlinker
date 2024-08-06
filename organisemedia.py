@@ -535,7 +535,7 @@ async def process_movie_task(movie_name, movie_folder_name, src_file, dest_dir, 
     else:
         relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
         os.symlink(relative_source_path, dest_file)
-        # existing_symlinks.add((src_file, dest_file))
+        existing_symlinks.add((src_file, dest_file))
         save_link(existing_symlinks, links_pkl)
     
     clean_destination = os.path.basename(dest_file)
@@ -676,7 +676,7 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
                 else:
                     relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
                     os.symlink(relative_source_path, dest_file)
-                    # existing_symlinks.add((src_file, dest_file))
+                    existing_symlinks.add((src_file, dest_file))
                     save_link(existing_symlinks, links_pkl)
                     symlink_created.append(dest_file)
 
@@ -812,7 +812,7 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
                     else:
                         relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
                         os.symlink(relative_source_path, dest_file)
-                        # existing_symlinks.add((src_file, dest_file))
+                        existing_symlinks.add((src_file, dest_file))
                         save_link(existing_symlinks, links_pkl)
                         symlink_created.append(dest_file)
 
