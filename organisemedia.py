@@ -24,44 +24,6 @@ LOG_LEVELS = {
 print_lock = asyncio.Lock()
 input_lock = asyncio.Lock()
 
-def initialize_database():
-    conn = sqlite3.connect(DATABASE_PATH)
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS catalog (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            eid TEXT,
-            title TEXT,
-            type TEXT,
-            year TEXT,
-            parent_eid TEXT,
-            parent_title TEXT,
-            parent_type TEXT,
-            parent_year TEXT,
-            grandparent_eid TEXT,
-            grandparent_title TEXT,
-            grandparent_type TEXT,
-            grandparent_year TEXT,
-            torrent_file_name TEXT,
-            actual_title TEXT,
-            processed_dir_name TEXT,
-            final_symlink_path TEXT
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS unaccounted (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            src_dir TEXT,
-            file_name TEXT,
-            matched_imdb_id TEXT,
-            year TEXT,
-            symlink_top_folder TEXT,
-            symlink_filename TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
 def insert_unaccounted_data(src_dir, file_name, matched_imdb_id, year, symlink_top_folder, symlink_filename):
     with db_lock:
         conn = sqlite3.connect(DATABASE_PATH)
@@ -640,6 +602,3 @@ async def process_unmatched_anime(folder_path, split, force):
             log_message("WARN", f"{file} in {root}")
     return matched_shows
 
-# Main script execution
-if __name__ == '__main__':
-    initialize_database()
