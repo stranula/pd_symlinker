@@ -447,6 +447,13 @@ async def process_movie(file, foldername, force=False):
             proper_name = f"{title} ({year})"
     
     return proper_name, ext
+
+def contains_episode(files):
+    episode_pattern = re.compile(r'(.*?)(S\d{2}E\d{2,3}(?:\-E\d{2})?|\b\d{1,2}x\d{2}\b|S\d{2}E\d{2}-?(?:E\d{2})|S\d{2,3} ?E\d{2}(?:\+E\d{2})?)', re.IGNORECASE)
+    for file in files:
+        if episode_pattern.search(file):
+            return True
+    return False
     
 async def process_anime(file, pattern1, pattern2, split=False, force=False):
     
@@ -565,93 +572,60 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
     symlink_created = []
     movies_cache = defaultdict(list)
     api_key = os.getenv('API_KEY', '')
-    
-    for root, dirs, files in os.walk(src_dir):
+
+    def contains_episode(files):
+        episode_pattern = re.compile(r'(.*?)(S\d{2}E\d{2,3}(?:\-E\d{2})?|\b\d{1,2}x\d{2}\b|S\d{2}E\d{2}-?(?:E\d{2})|S\d{2,3} ?E\d{2}(?:\+E\d{2})?)', re.IGNORECASE)
         for file in files:
-            src_file = os.path.join(root, file)
-            is_anime = False
-            is_movie = False
-            media_dir = "shows"
-            symlink_exists = False
-            
-            if src_file in ignored_files:
-               continue
-            
-            symlink_exists |= any(
-                src_file == existing_src_file
-                for existing_src_file, _ in existing_symlinks  
-            )
-            if symlink_exists:
-                ignored_files.add(src_file)
-                continue
-            
-            sample_match = re.search('sample', file, re.IGNORECASE)
-            #TODO: Exclude extras like deleted scenes etc
-            #extras_match = re.search(r'deleted ?.scenes\b', file, re.IGNORECASE) 
-            if sample_match:
-                continue
+            if episode_pattern.search(file):
+                return True
+        return False
 
-            episode_match = re.search(r'(.*?)(S\d{2} E\d{2,3}(?:\-E\d{2})?|\b\d{1,2}x\d{2}\b|S\d{2}E\d{2}-?(?:E\d{2})|S\d{2,3} ?E\d{2}(?:\+E\d{2})?)', file, re.IGNORECASE)
-            if not episode_match:
-                pattern = re.compile(r'(?!.* - \d+\.\d+GB)(.*) - (\d{2,3})(?:v2)?\b(?: (\[?\(?\d{3,4}p\)?\]?))?')
-                alt_pattern = re.compile(r'S(\d{1,2}) - (\d{2})')
-                if re.search(pattern, file) or re.search(alt_pattern, file):
-                    show_folder, season_number, new_name, media_dir = await process_anime(file, pattern, alt_pattern, split, force)
-                    season_folder = f"Season {int(season_number):02d}"
-                    is_anime = True
-                else:
-                    #continue # you can comment this line to enable the processing of movies
-                    if PROCESS_NON_PD_MOVIES == true:
-                        is_movie = True
-                        dest_dir = os.path.join(DEST_DIR)
-                        movie_folder_name = os.path.basename(root)
-                        movies_cache[file].append((movie_folder_name, src_file, dest_dir, existing_symlinks, links_pkl))
-                        if len(movies_cache) >= 1:
-                            await process_movies_in_batches(movies_cache, ignored_files=ignored_files)
-                        continue
-                    else:
-                        continue
+    for root, dirs, files in os.walk(src_dir):
+        if contains_episode(files):
+            log_message('INFO', f"Processing as show folder: {root}")
+            for file in files:
+                src_file = os.path.join(root, file)
+                if src_file in ignored_files:
+                    continue
 
-            if not is_movie and not is_anime:
-                episode_identifier = episode_match.group(2)
+                symlink_exists = any(
+                    src_file == existing_src_file
+                    for existing_src_file, _ in existing_symlinks
+                )
+                if symlink_exists:
+                    ignored_files.add(src_file)
+                    continue
 
-                multiepisode_match = re.search(r'(S\d{2,3} ?E\d{2,3}E\d{2}|S\d{2,3} ?E\d{2}\+E\d{2}|S\d{2,3} ?E\d{2}\-E\d{2})', episode_identifier, re.IGNORECASE)
-                alt_episode_match = re.search(r'\d{1,2}x\d{2}', episode_identifier)
-                edge_case_episode_match = re.search(r'S\d{3} ?E\d{2}', episode_identifier)
-                
-                if multiepisode_match:
-                    episode_identifier = re.sub(
-                        r'(S\d{2,3} ?E\d{2}E\d{2}|S\d{2,3} ?E\d{2}\+E\d{2}|S\d{2,3} ?E\d{2}\-E\d{2})',
-                        format_multi_match,
-                        episode_identifier,
-                        flags=re.IGNORECASE
-                    )
-                elif alt_episode_match:
-                    episode_identifier = re.sub(r'(\d{1,2})x(\d{2})', lambda m: f's{int(m.group(1)):02d}e{m.group(2)}', episode_identifier)
-                elif edge_case_episode_match:
-                    episode_identifier = re.sub(r'S(\d{3}) ?E(\d{2})', lambda m: f's{int(m.group(1)):d}e{m.group(2)}', episode_identifier)
-                    
+                sample_match = re.search('sample', file, re.IGNORECASE)
+                if sample_match:
+                    continue
+
+                episode_match = re.search(r'(.*?)(S\d{2}E\d{2,3}(?:\-E\d{2})?|\b\d{1,2}x\d{2}\b|S\d{2}E\d{2}-?(?:E\d{2})|S\d{2,3} ?E\d{2}(?:\+E\d{2})?)', file, re.IGNORECASE)
+                if not episode_match:
+                    log_message('INFO', f"Ignored non-episode file in show folder: {file}")
+                    continue
+
                 parent_folder_name = os.path.basename(root)
                 folder_name = re.sub(r'\s*(S\d{2}.*|Season \d+).*|(\d{3,4}p)', '', parent_folder_name).replace('-', ' ').replace('.', ' ')
-                
+
                 if re.match(r'S\d{2} ?E\d{2}', file, re.IGNORECASE):
                     show_name = re.sub(r'\s*(S\d{2}.*|Season \d+).*', '', parent_folder_name).replace('-', ' ').replace('.', ' ').strip()
                 else:
                     show_name = episode_match.group(1).replace('.', ' ').strip()
-                
+
                 if are_similar(folder_name.lower(), show_name.lower()):
-                    show_name = folder_name    
+                    show_name = folder_name
 
                 name, ext = os.path.splitext(file)
-                
+
                 if '.' in name:
                     new_name = re.sub(r'\.', ' ', name)
                 else:
                     new_name = name
 
-                season_number = re.search(r'S(\d{2}) ?E\d{2,3}', episode_identifier, re.IGNORECASE).group(1)
+                season_number = re.search(r'S(\d{2}) ?E\d{2,3}', episode_match.group(2), re.IGNORECASE).group(1)
                 season_folder = f"Season {int(season_number):02d}"
-                
+
                 show_folder = re.sub(r'\s+$|_+$|-+$|(\()$', '', show_name).rstrip()
 
                 if show_folder.isdigit() and len(show_folder) <= 4:
@@ -660,54 +634,190 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
                     year = extract_year_from_folder(parent_folder_name) or extract_year(show_folder)
                     if year:
                         show_folder = re.sub(r'\(\d{4}\)$', '', show_folder).strip()
-                        show_folder = re.sub(r'\d{4}$', '', show_folder).strip()       
+                        show_folder = re.sub(r'\d{4}$', '', show_folder).strip()
                 show_folder, showid, media_dir = await get_series_info(show_folder, year, split, force)
                 show_folder = show_folder.replace('/', '')
-                
+
                 resolution = extract_resolution(new_name)
                 if not resolution:
                     resolution = extract_resolution(parent_folder_name)
                     if resolution is not None:
                         resolution = f"[{resolution}]"
-                        
+
                 file_name = re.search(r'(^.*S\d{2}E\d{2})', new_name)
                 if file_name:
                     new_name = file_name.group(0) + ' '
                 if re.search(r'\{(tmdb-\d+|imdb-tt\d+)\}', show_folder):
                     year = re.search(r'\((\d{4})\)', show_folder).group(1)
-                    new_name = get_episode_details(showid, episode_identifier, show_folder, year)
+                    new_name = get_episode_details(showid, episode_match.group(2), show_folder, year)
                 if resolution:
                     new_name = f"{new_name} [{resolution}] {ext}"
                 else:
                     new_name = f"{new_name} {ext}"
 
-            new_name = new_name.replace('/', '')
-            dest_path = os.path.join(dest_dir, show_folder, season_folder)
-                    
-            os.makedirs(dest_path, exist_ok=True)
-            dest_file = os.path.join(dest_path, new_name)
-            if os.path.islink(dest_file):
-                if os.readlink(dest_file) == src_file:
-                    continue
-                else:
-                    new_name = get_unique_filename(dest_path, new_name)
-                    dest_file = os.path.join(dest_path, new_name)
-            
-            if os.path.exists(dest_file) and not os.path.islink(dest_file):
-                ignored_files.add(dest_file)
-                continue
+                new_name = new_name.replace('/', '')
+                dest_path = os.path.join(dest_dir, show_folder, season_folder)
 
-            if os.path.isdir(src_file):
-                shutil.copytree(src_file, dest_file, symlinks=True)
-            else:
-                relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
-                os.symlink(relative_source_path, dest_file)
-                existing_symlinks.add((src_file, dest_file))
-                save_link(existing_symlinks, links_pkl)
-                symlink_created.append(dest_file)
-                
-            clean_destination = os.path.basename(dest_file)
-            log_message("SUCCESS", f"Created symlink: {Fore.LIGHTCYAN_EX}{clean_destination} {Style.RESET_ALL}-> {src_file}")
+                os.makedirs(dest_path, exist_ok=True)
+                dest_file = os.path.join(dest_path, new_name)
+                if os.path.islink(dest_file):
+                    if os.readlink(dest_file) == src_file:
+                        continue
+                    else:
+                        new_name = get_unique_filename(dest_path, new_name)
+                        dest_file = os.path.join(dest_path, new_name)
+
+                if os.path.exists(dest_file) and not os.path.islink(dest_file):
+                    ignored_files.add(dest_file)
+                    continue
+
+                if os.path.isdir(src_file):
+                    shutil.copytree(src_file, dest_file, symlinks=True)
+                else:
+                    relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
+                    os.symlink(relative_source_path, dest_file)
+                    existing_symlinks.add((src_file, dest_file))
+                    save_link(existing_symlinks, links_pkl)
+                    symlink_created.append(dest_file)
+
+                clean_destination = os.path.basename(dest_file)
+                log_message("SUCCESS", f"Created symlink: {Fore.LIGHTCYAN_EX}{clean_destination} {Style.RESET_ALL}-> {src_file}")
+        else:
+            log_message('INFO', f"Processing as movie folder: {root}")
+            for file in files:
+                src_file = os.path.join(root, file)
+                if src_file in ignored_files:
+                    continue
+
+                symlink_exists = any(
+                    src_file == existing_src_file
+                    for existing_src_file, _ in existing_symlinks
+                )
+                if symlink_exists:
+                    ignored_files.add(src_file)
+                    continue
+
+                sample_match = re.search('sample', file, re.IGNORECASE)
+                if sample_match:
+                    continue
+
+                episode_match = re.search(r'(.*?)(S\d{2}E\d{2,3}(?:\-E\d{2})?|\b\d{1,2}x\d{2}\b|S\d{2}E\d{2}-?(?:E\d{2})|S\d{2,3} ?E\d{2}(?:\+E\d{2})?)', file, re.IGNORECASE)
+                if not episode_match:
+                    pattern = re.compile(r'(?!.* - \d+\.\d+GB)(.*) - (\d{2,3})(?:v2)?\b(?: (\[?\(?\d{3,4}p\)?\]?))?')
+                    alt_pattern = re.compile(r'S(\d{1,2}) - (\d{2})')
+                    if re.search(pattern, file) or re.search(alt_pattern, file):
+                        show_folder, season_number, new_name, media_dir = await process_anime(file, pattern, alt_pattern, split, force)
+                        season_folder = f"Season {int(season_number):02d}"
+                        is_anime = True
+                    else:
+                        #continue # you can comment this line to enable the processing of movies
+                        if PROCESS_NON_PD_MOVIES == true:
+                            is_movie = True
+                            dest_dir = os.path.join(DEST_DIR)
+                            movie_folder_name = os.path.basename(root)
+                            movies_cache[file].append((movie_folder_name, src_file, dest_dir, existing_symlinks, links_pkl))
+                            if len(movies_cache) >= 1:
+                                await process_movies_in_batches(movies_cache, ignored_files=ignored_files)
+                            continue
+                        else:
+                            continue
+
+                if not is_movie and not is_anime:
+                    episode_identifier = episode_match.group(2)
+
+                    multiepisode_match = re.search(r'(S\d{2,3} ?E\d{2,3}E\d{2}|S\d{2,3} ?E\d{2}\+E\d{2}|S\d{2,3} ?E\d{2}\-E\d{2})', episode_identifier, re.IGNORECASE)
+                    alt_episode_match = re.search(r'\d{1,2}x\d{2}', episode_identifier)
+                    edge_case_episode_match = re.search(r'S\d{3} ?E\d{2}', episode_identifier)
+
+                    if multiepisode_match:
+                        episode_identifier = re.sub(
+                            r'(S\d{2,3} ?E\d{2}E\d{2}|S\d{2,3} ?E\d{2}\+E\d{2}|S\d{2,3} ?E\d{2}\-E\d{2})',
+                            format_multi_match,
+                            episode_identifier,
+                            flags=re.IGNORECASE
+                        )
+                    elif alt_episode_match:
+                        episode_identifier = re.sub(r'(\d{1,2})x(\d{2})', lambda m: f's{int(m.group(1)):02d}e{m.group(2)}', episode_identifier)
+                    elif edge_case_episode_match:
+                        episode_identifier = re.sub(r'S(\d{3}) ?E(\d{2})', lambda m: f's{int(m.group(1)):d}e{m.group(2)}', episode_identifier)
+
+                    parent_folder_name = os.path.basename(root)
+                    folder_name = re.sub(r'\s*(S\d{2}.*|Season \d+).*|(\d{3,4}p)', '', parent_folder_name).replace('-', ' ').replace('.', ' ')
+
+                    if re.match(r'S\d{2} ?E\d{2}', file, re.IGNORECASE):
+                        show_name = re.sub(r'\s*(S\d{2}.*|Season \d+).*', '', parent_folder_name).replace('-', ' ').replace('.', ' ').strip()
+                    else:
+                        show_name = episode_match.group(1).replace('.', ' ').strip()
+
+                    if are_similar(folder_name.lower(), show_name.lower()):
+                        show_name = folder_name
+
+                    name, ext = os.path.splitext(file)
+
+                    if '.' in name:
+                        new_name = re.sub(r'\.', ' ', name)
+                    else:
+                        new_name = name
+
+                    season_number = re.search(r'S(\d{2}) ?E\d{2,3}', episode_identifier, re.IGNORECASE).group(1)
+                    season_folder = f"Season {int(season_number):02d}"
+
+                    show_folder = re.sub(r'\s+$|_+$|-+$|(\()$', '', show_name).rstrip()
+
+                    if show_folder.isdigit() and len(show_folder) <= 4:
+                        year = None
+                    else:
+                        year = extract_year_from_folder(parent_folder_name) or extract_year(show_folder)
+                        if year:
+                            show_folder = re.sub(r'\(\d{4}\)$', '', show_folder).strip()
+                            show_folder = re.sub(r'\d{4}$', '', show_folder).strip()
+                    show_folder, showid, media_dir = await get_series_info(show_folder, year, split, force)
+                    show_folder = show_folder.replace('/', '')
+
+                    resolution = extract_resolution(new_name)
+                    if not resolution:
+                        resolution = extract_resolution(parent_folder_name)
+                        if resolution is not None:
+                            resolution = f"[{resolution}]"
+
+                    file_name = re.search(r'(^.*S\d{2}E\d{2})', new_name)
+                    if file_name:
+                        new_name = file_name.group(0) + ' '
+                    if re.search(r'\{(tmdb-\d+|imdb-tt\d+)\}', show_folder):
+                        year = re.search(r'\((\d{4})\)', show_folder).group(1)
+                        new_name = get_episode_details(showid, episode_identifier, show_folder, year)
+                    if resolution:
+                        new_name = f"{new_name} [{resolution}] {ext}"
+                    else:
+                        new_name = f"{new_name} {ext}"
+
+                    new_name = new_name.replace('/', '')
+                    dest_path = os.path.join(dest_dir, show_folder, season_folder)
+
+                    os.makedirs(dest_path, exist_ok=True)
+                    dest_file = os.path.join(dest_path, new_name)
+                    if os.path.islink(dest_file):
+                        if os.readlink(dest_file) == src_file:
+                            continue
+                        else:
+                            new_name = get_unique_filename(dest_path, new_name)
+                            dest_file = os.path.join(dest_path, new_name)
+
+                    if os.path.exists(dest_file) and not os.path.islink(dest_file):
+                        ignored_files.add(dest_file)
+                        continue
+
+                    if os.path.isdir(src_file):
+                        shutil.copytree(src_file, dest_file, symlinks=True)
+                    else:
+                        relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
+                        os.symlink(relative_source_path, dest_file)
+                        existing_symlinks.add((src_file, dest_file))
+                        save_link(existing_symlinks, links_pkl)
+                        symlink_created.append(dest_file)
+
+                    clean_destination = os.path.basename(dest_file)
+                    log_message("SUCCESS", f"Created symlink: {Fore.LIGHTCYAN_EX}{clean_destination} {Style.RESET_ALL}-> {src_file}")
 
     if movies_cache:
         await process_movies_in_batches(movies_cache, ignored_files=ignored_files)
