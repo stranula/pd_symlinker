@@ -179,10 +179,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             torrent_dir_name = entry['Torrent File Name']
             actual_title_name = entry['Actual Title']
             
-            if torrent_dir_name in processed_items:
-                continue
-            
-            if actual_title_name in processed_items:
+            if torrent_dir_name in processed_items or actual_title_name in processed_items:
                 continue
 
             title = entry['Title']
@@ -246,7 +243,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                             print(f"Error creating relative symlink: {e}")
                     else:
                         print(f"Symlink already exists: {target_file_path}")
-                        new_processed_items.add(torrent_dir_name)
+                    new_processed_items.add(torrent_dir_name)
+                    write_processed_items(processed_items_file, new_processed_items)
 
             else:
                 # TV show handling code
@@ -296,6 +294,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         if any(f.startswith(episode_pattern) and f.endswith(file_ext) for f in existing_files):
                             print(f"Symlink for {episode_identifier} already exists. Skipping file: {file_name}")
                             new_processed_items.add(torrent_dir_name)
+                            write_processed_items(processed_items_file, new_processed_items)
                             continue
 
                         resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
@@ -319,9 +318,11 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                                 print(f"Error creating relative symlink: {e}")
                         else:
                             print(f"Symlink already exists: {target_file_path}")
-                            new_processed_items.add(torrent_dir_name)
+                        new_processed_items.add(torrent_dir_name)
+                        write_processed_items(processed_items_file, new_processed_items)
 
             new_processed_items.add(torrent_dir_name)
+            write_processed_items(processed_items_file, new_processed_items)
             
         except Exception as e:
             print(f"Error processing entry: {e}")
