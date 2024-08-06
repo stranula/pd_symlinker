@@ -428,27 +428,29 @@ def get_unique_filename(dest_path, new_name):
 
 async def process_movie(file, foldername, force=False):
     path = f"/{foldername}"
-    log_message("INFO", f"Current Movie file: {os.path.join(path,file)}")
+    log_message("INFO", f"Current Movie file: {os.path.join(path, file)}")
     
     moviename = re.sub(r'^\[.*?\]\s*', '', foldername)
     moviename = re.sub(r"^\d\. ", "", moviename)
     name, ext = os.path.splitext(file)
     if '.' in moviename:
         moviename = re.sub(r'\.', ' ', moviename)
+    
     pattern = r"^(.*?)\s*[\(\[]?(\d{4})[\)\]]?\s*(?:.*?(\d{3,4}p))?.*$"
     four_digit_numbers = re.findall(r'\b\d{4}\b', moviename)
+    
     if len(four_digit_numbers) >= 2:
         pattern = r"(.+?)\b(\d{4})\D+(\d{3,4}p)"
         match = re.search(pattern, moviename)
         title = match.group(1).strip("(")
         year = match.group(2).strip('()')
     else:
-        # Search the pattern in the string
         match = re.search(pattern, moviename)
         title = match.group(1)
         year = match.group(2).strip('()')
-        #resolution = match.group(3)
+    
     proper_name = await get_movie_info(title, year, force)
+    
     if year is None or year == "":
         if proper_name is None:
             proper_name = title
@@ -456,8 +458,13 @@ async def process_movie(file, foldername, force=False):
         if proper_name is None:
             proper_name = f"{title} ({year})"
     
+    # Extract resolution
+    resolution = extract_resolution(file)
+    if resolution:
+        proper_name = f"{proper_name} [{resolution}]"
+    
     return proper_name, ext
-
+    
 async def process_anime(file, pattern1, pattern2, split=False, force=False):
     
     file = re.sub(r'^\[.*?\]\s*', '', file)
@@ -538,6 +545,7 @@ async def process_movie_task(movie_name, movie_folder_name, src_file, dest_dir, 
     clean_destination = os.path.basename(dest_file)
     async with print_lock:
         log_message("SUCCESS", f"Created relative symlink: {Fore.LIGHTCYAN_EX}{clean_destination} {Style.RESET_ALL}-> {src_file}")
+
 
 async def process_movies_in_batches(movies_cache, batch_size=5, ignored_files=None):
     tasks = []
