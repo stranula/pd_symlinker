@@ -114,7 +114,7 @@ def is_anime(moviedb_id):
         print(f"Error fetching data: {e}")
         return False
     
-async def get_movie_info(title, year=None, force=False):
+async def get_movie_info(title, year=None, force=True):
     global _api_cache
     formatted_title = title.replace(" ", "%20")
     cache_key = f"movie_{formatted_title}_{year}"
