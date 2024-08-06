@@ -605,7 +605,7 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
                 else:
                     #continue # you can comment this line to enable the processing of movies
                     is_movie = True
-                    dest_dir_movies = os.path.join(DEST_DIR, "movies")
+                    dest_dir = os.path.join(DEST_DIR)
                     movie_folder_name = os.path.basename(root)
                     movies_cache[file].append((movie_folder_name, src_file, dest_dir, existing_symlinks, links_pkl))
                     if len(movies_cache) >= 1:
