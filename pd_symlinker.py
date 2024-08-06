@@ -179,7 +179,11 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             torrent_dir_name = entry['Torrent File Name']
             actual_title_name = entry['Actual Title']
             
-            if torrent_dir_name in processed_items or actual_title_name in processed_items:
+            torrent_dir_path = find_best_match(torrent_dir_name, actual_title_name, src_dir)
+            if not torrent_dir_path:
+                continue
+            
+            if torrent_dir_path in processed_items:
                 continue
 
             title = entry['Title']
