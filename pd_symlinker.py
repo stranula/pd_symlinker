@@ -11,7 +11,6 @@ from moviepy.editor import VideoFileClip
 import asyncio
 from organisemedia import process_unaccounted_folder
 
-
 # Constants
 DEFAULT_CATALOG_PATH = '/catalog/catalog.csv'
 PROCESSED_ITEMS_FILE = '/catalog/processed_items.txt'
@@ -247,6 +246,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                             print(f"Error creating relative symlink: {e}")
                     else:
                         print(f"Symlink already exists: {target_file_path}")
+                        new_processed_items.add(torrent_dir_name)
 
             else:
                 # TV show handling code
@@ -295,6 +295,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         episode_pattern = f"{base_title} ({base_year}) {{imdb-{imdb_id}}} - {episode_identifier} ["
                         if any(f.startswith(episode_pattern) and f.endswith(file_ext) for f in existing_files):
                             print(f"Symlink for {episode_identifier} already exists. Skipping file: {file_name}")
+                            new_processed_items.add(torrent_dir_name)
                             continue
 
                         resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
@@ -318,6 +319,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                                 print(f"Error creating relative symlink: {e}")
                         else:
                             print(f"Symlink already exists: {target_file_path}")
+                            new_processed_items.add(torrent_dir_name)
 
             new_processed_items.add(torrent_dir_name)
             
@@ -347,20 +349,13 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 print(f"Processing unaccounted directory: {unaccounted_dir_path}")
                 asyncio.run(process_unaccounted_folder(unaccounted_dir_path, dest_dir))
                 new_processed_items = set(processed_items)
-                new_processed_items.add(torrent_dir_name)
+                new_processed_items.add(unaccounted_dir)
                 write_processed_items(processed_items_file, new_processed_items)
             else:
                 print(f"Skipping non-directory: {unaccounted_dir_path}")
-                
-
 
 def create_symlinks():
     print("create_symlinks function called.")
-    # print(src_dir)
-    # print(dest_dir)
-    # print(dest_dir_movies)
-    # print(DEFAULT_CATALOG_PATH)
-    # print(PROCESSED_ITEMS_FILE)
     try:
         create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, DEFAULT_CATALOG_PATH, PROCESSED_ITEMS_FILE)
     except Exception as e:
