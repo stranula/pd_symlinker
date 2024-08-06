@@ -458,11 +458,6 @@ async def process_movie(file, foldername, force=False):
         if proper_name is None:
             proper_name = f"{title} ({year})"
     
-    # Extract resolution
-    resolution = extract_resolution(file)
-    if resolution:
-        proper_name = f"{proper_name} [{resolution}]"
-    
     return proper_name, ext
     
 async def process_anime(file, pattern1, pattern2, split=False, force=False):
@@ -518,7 +513,13 @@ async def process_anime(file, pattern1, pattern2, split=False, force=False):
 async def process_movie_task(movie_name, movie_folder_name, src_file, dest_dir, existing_symlinks, links_pkl, ignored_files):
     movie_name, ext = await process_movie(movie_name, movie_folder_name)
     movie_name = movie_name.replace("/", " ")
-    new_name = movie_name + ext
+    
+    # Extract resolution
+    resolution = extract_resolution(src_file)
+    if resolution:
+        new_name = f"{movie_name} [{resolution}]{ext}"
+    else:
+        new_name = f"{movie_name}{ext}"
 
     dest_path = os.path.join(dest_dir, "movies", movie_name)
     os.makedirs(dest_path, exist_ok=True)
