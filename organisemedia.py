@@ -711,7 +711,7 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
                         is_anime = True
                     else:
                         #continue # you can comment this line to enable the processing of movies
-                        if PROCESS_NON_PD_MOVIES == true:
+                        if PROCESS_NON_PD_MOVIES == 'true':
                             is_movie = True
                             dest_dir = os.path.join(DEST_DIR)
                             movie_folder_name = os.path.basename(root)
