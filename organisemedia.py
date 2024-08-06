@@ -10,6 +10,8 @@ import pickle, subprocess
 from collections import defaultdict
 import asyncio, aioconsole, aiohttp
 from colorama import init, Fore, Style
+import sqlite3
+import threading
 
 init(autoreset=True)
 
@@ -28,6 +30,20 @@ LOG_LEVELS = {
 
 print_lock = asyncio.Lock()
 input_lock = asyncio.Lock()
+
+DATABASE_PATH = '/catalog/media_database.db'
+db_lock = threading.Lock()
+
+def insert_unaccounted_data(src_dir, file_name, matched_imdb_id, year, symlink_top_folder, symlink_filename):
+    with db_lock:
+        conn = sqlite3.connect(DATABASE_PATH)
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO unaccounted (src_dir, file_name, matched_imdb_id, year, symlink_top_folder, symlink_filename)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (src_dir, file_name, matched_imdb_id, year, symlink_top_folder, symlink_filename))
+        conn.commit()
+        conn.close()
 
 
 def log_message(log_level, message):
@@ -50,6 +66,7 @@ def are_similar(folder_name, show_name, threshold=0.8):
 
 async def process_unaccounted_folder(folder_path, dest_dir):
     await create_symlinks(folder_path, dest_dir, force=True, split=False)
+
 
 def save_link(data, file_path):
     with open(file_path, 'wb') as f:
