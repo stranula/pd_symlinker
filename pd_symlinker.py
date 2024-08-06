@@ -20,7 +20,7 @@ DEST_DIR = os.getenv('DEST_DIR', '')
 src_dir = SRC_DIR
 dest_dir = os.path.join(DEST_DIR, "shows")
 dest_dir_movies = os.path.join(DEST_DIR, "movies")
-DATABASE_PATH = '/data/media_database.db'
+DATABASE_PATH = '/catalog/media_database.db'
 db_lock = threading.Lock()
 
 # Initialize colorama
