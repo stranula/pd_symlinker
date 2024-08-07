@@ -174,7 +174,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             torrent_dir_name = entry[13]
             actual_title_name = entry[14]
             original_torrent_dir_name = entry[13]
-            original_actual_title_name = entry[14]
+            original_actual_name = entry[14]
 
             torrent_dir_path = find_best_match(torrent_dir_name, actual_title_name, src_dir)
             if not torrent_dir_path:
