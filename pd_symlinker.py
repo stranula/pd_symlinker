@@ -235,7 +235,10 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                             os.symlink(relative_source_path, target_file_path)
                         except OSError as e:
                             print(f"Error creating relative symlink: {e}")
+                    print(f'Created relative symlink: {target_file_name}')
                     update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
+                    print(f'Created relative symlink: {target_file_path}')
+
 
             else:
                 base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
@@ -297,8 +300,12 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                             except OSError as e:
                                 print(f"Error creating relative symlink: {e}")
                         update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
+                        print(f'Created relative symlink: {target_file_path}')
+
 
             update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
+            print(f'Created relative symlink: {target_file_path}')
+
             
         except Exception as e:
             print(f"Error processing entry: {e}")
