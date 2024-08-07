@@ -1,20 +1,15 @@
 import sqlite3
 import os
 import re
-import subprocess
-import json
 from datetime import datetime
 from colorama import init
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 from moviepy.editor import VideoFileClip
-import asyncio
-from organisemedia import process_unaccounted_folder
 import threading
 
 # Constants
 DEFAULT_CATALOG_PATH = '/data/catalog.csv'
-PROCESSED_ITEMS_FILE = '/data/processed_items.txt'
 SRC_DIR = os.getenv('SRC_DIR', '')
 DEST_DIR = os.getenv('DEST_DIR', '')
 src_dir = SRC_DIR
@@ -191,7 +186,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             grandparent_type = entry[11]
             grandparent_year = entry[12]
             actual_title = entry[14]
-            
+
             target_file_path = None  # Ensure this is defined before usage
 
             if type_ == 'movie':
@@ -207,10 +202,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 if not os.path.exists(target_folder):
                     os.makedirs(target_folder, exist_ok=True)
 
-                torrent_dir_path = find_best_match(torrent_dir_name, actual_title, src_dir)
-                if not torrent_dir_path:
-                    continue
-
                 largest_file = None
                 largest_size = 0
                 for file_name in os.listdir(torrent_dir_path):
@@ -224,7 +215,9 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 if largest_file:
                     file_ext = os.path.splitext(largest_file)[1]
                     resolution = extract_resolution(largest_file, parent_folder_name=torrent_dir_path, file_path=os.path.join(torrent_dir_path, largest_file))
-                    target_file_name = f"{base_title}  ({base_year}) {{imdb-{imdb_id}}} [{resolution}]{file_ext}"
+                    if not resolution:
+                        resolution = 'unknown'
+                    target_file_name = f"{base_title} ({base_year}) {{imdb-{imdb_id}}} [{resolution}]{file_ext}"
                     target_file_name = clean_filename(target_file_name)
                     target_file_path = os.path.join(target_folder, target_file_name)
                     
@@ -233,12 +226,10 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         try:
                             relative_source_path = os.path.relpath(largest_file_path, os.path.dirname(target_file_path))
                             os.symlink(relative_source_path, target_file_path)
+                            print(f"Created symlink for movie: {target_file_path}")
+                            update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
                         except OSError as e:
                             print(f"Error creating relative symlink: {e}")
-                    print(f'Created relative symlink: {target_file_name}')
-                    update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
-                    print(f'Created relative symlink: {target_file_path}')
-
 
             else:
                 base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
@@ -257,10 +248,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                     except OSError as e:
                         print(f"Error creating target folder: {e}")
                         continue
-
-                torrent_dir_path = find_best_match(torrent_dir_name, actual_title, src_dir)
-                if not torrent_dir_path:
-                    continue
 
                 for file_name in os.listdir(torrent_dir_path):
                     file_path = os.path.join(torrent_dir_path, file_name)
@@ -283,6 +270,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                             continue
 
                         resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
+                        if not resolution:
+                            resolution = 'unknown'
                         target_file_name = f"{base_title} ({base_year}) {{imdb-{imdb_id}}} - {episode_identifier} [{resolution}]{file_ext}"
                         target_file_name = clean_filename(target_file_name)
 
@@ -297,40 +286,13 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                             try:
                                 relative_source_path = os.path.relpath(file_path, os.path.dirname(target_file_path))
                                 os.symlink(relative_source_path, target_file_path)
+                                print(f"Created symlink for TV show: {target_file_path}")
+                                update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
                             except OSError as e:
                                 print(f"Error creating relative symlink: {e}")
-                        update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
-                        print(f'Created relative symlink: {target_file_path}')
 
-
-            update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
-            print(f'Created relative symlink: {target_file_path}')
-
-            
         except Exception as e:
             print(f"Error processing entry: {e}")
-
-#    write_processed_items_db(new_processed_items)
-    
-#    processed_items = read_processed_items_db()
-#    new_processed_items = set(processed_items)
-#    all_dirs = set(os.listdir(src_dir))
-
-#    catalog_dirs = set(entry[13] for entry in catalog_data)
-#    catalog_dirs_2 = set(entry[14] for entry in catalog_data)
-
-#    unaccounted_dirs = all_dirs - catalog_dirs - catalog_dirs_2 - processed_items
-    
-#    if unaccounted_dirs:
-#        for unaccounted_dir in unaccounted_dirs:
-#            unaccounted_dir_path = os.path.join(src_dir, unaccounted_dir)
-#            if os.path.isdir(unaccounted_dir_path):
-#                asyncio.run(process_unaccounted_folder(unaccounted_dir_path, dest_dir))
- #               new_processed_items = set(processed_items)
-  #              new_processed_items.add(unaccounted_dir)
-   #             write_processed_items_db(unaccounted_dir)
-    #        else:
-     #           print(f"Skipping non-directory: {unaccounted_dir_path}")
 
 def create_symlinks():
     try:
