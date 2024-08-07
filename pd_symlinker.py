@@ -28,7 +28,6 @@ init(autoreset=True)
 
 def read_catalog_db():
     with db_lock:
-        print(DATABASE_PATH)
         conn = sqlite3.connect(DATABASE_PATH)
         c = conn.cursor()
         c.execute('SELECT * FROM catalog')
@@ -180,9 +179,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             if not torrent_dir_path:
                 continue
 
-            #if torrent_dir_path in processed_items:
-            #    continue
-
             title = entry[2]
             type_ = entry[3]
             year = entry[4]
@@ -264,7 +260,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         continue
                         
                 torrent_dir_path = find_best_match(torrent_dir_name, actual_title, src_dir)
-                print(torrent_dir_path)
                 if not torrent_dir_path:
                     continue
                 print(f"Processing torrent directory: {torrent_dir_path}")
@@ -313,32 +308,9 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                                 print(f"Error creating relative symlink: {e}")
 
             update_catalog_entry(torrent_dir_name, target_file_path, original_torrent_dir_name, original_actual_name)
-
             
         except Exception as e:
             print(f"Error processing entry: {e}")
-
-#    write_processed_items_db(new_processed_items)
-    
-#    processed_items = read_processed_items_db()
-#    new_processed_items = set(processed_items)
-#    all_dirs = set(os.listdir(src_dir))
-
-#    catalog_dirs = set(entry[13] for entry in catalog_data)
-#    catalog_dirs_2 = set(entry[14] for entry in catalog_data)
-
-#    unaccounted_dirs = all_dirs - catalog_dirs - catalog_dirs_2 - processed_items
-    
-#    if unaccounted_dirs:
-#        for unaccounted_dir in unaccounted_dirs:
-#            unaccounted_dir_path = os.path.join(src_dir, unaccounted_dir)
-#            if os.path.isdir(unaccounted_dir_path):
-#                asyncio.run(process_unaccounted_folder(unaccounted_dir_path, dest_dir))
- #               new_processed_items = set(processed_items)
-  #              new_processed_items.add(unaccounted_dir)
-   #             write_processed_items_db(unaccounted_dir)
-    #        else:
-     #           print(f"Skipping non-directory: {unaccounted_dir_path}")
 
 def create_symlinks():
     try:
