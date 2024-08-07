@@ -89,23 +89,6 @@ def clean_filename(filename):
     filename = re.sub(r' -$', '', filename)  # Remove trailing dash
     return filename
 
-def read_processed_items_db():
-    with db_lock:
-        conn = sqlite3.connect(DATABASE_PATH)
-        c = conn.cursor()
-        c.execute('SELECT torrent_dir_name FROM processed_items')
-        rows = c.fetchall()
-        conn.close()
-        return {row[0] for row in rows}
-
-def write_processed_items_db(torrent_dir_name):
-    with db_lock:
-        conn = sqlite3.connect(DATABASE_PATH)
-        c = conn.cursor()
-        c.execute('INSERT INTO processed_items (torrent_dir_name) VALUES (?)', (torrent_dir_name,))
-        conn.commit()
-        conn.close()
-
 def extract_id(eid_string, preferred='imdb', fallback='tmdb'):
     ids = eid_string.split(', ')
     for id_str in ids:
@@ -183,8 +166,7 @@ def extract_season_episode(file_name):
 
 def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_path):
     catalog_data = read_catalog_db()
-    processed_items = read_processed_items_db()
-    new_processed_items = set(processed_items)
+    processed_items = {entry[13] for entry in catalog_data if entry[13]}
 
     for entry in catalog_data:
         try:
@@ -252,7 +234,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         except OSError as e:
                             print(f"Error creating relative symlink: {e}")
                     new_processed_items.add(torrent_dir_name)
-                    write_processed_items_db(torrent_dir_name)
                     update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
 
             else:
@@ -295,7 +276,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         episode_pattern = f"{base_title} ({base_year}) {{imdb-{imdb_id}}} - {episode_identifier} ["
                         if any(f.startswith(episode_pattern) and f.endswith(file_ext) for f in existing_files):
                             new_processed_items.add(torrent_dir_name)
-                            write_processed_items_db(torrent_dir_name)
                             update_catalog_entry(torrent_dir_name, None, torrent_dir_name)
                             continue
 
@@ -317,11 +297,9 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                             except OSError as e:
                                 print(f"Error creating relative symlink: {e}")
                         new_processed_items.add(torrent_dir_name)
-                        write_processed_items_db(torrent_dir_name)
                         update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
 
             new_processed_items.add(torrent_dir_name)
-            write_processed_items_db(torrent_dir_name)
             update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
             
         except Exception as e:
