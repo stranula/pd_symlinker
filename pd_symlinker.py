@@ -233,7 +233,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                             os.symlink(relative_source_path, target_file_path)
                         except OSError as e:
                             print(f"Error creating relative symlink: {e}")
-                    new_processed_items.add(torrent_dir_name)
                     update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
 
             else:
@@ -275,7 +274,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         existing_files = os.listdir(target_folder_season) if os.path.exists(target_folder_season) else []
                         episode_pattern = f"{base_title} ({base_year}) {{imdb-{imdb_id}}} - {episode_identifier} ["
                         if any(f.startswith(episode_pattern) and f.endswith(file_ext) for f in existing_files):
-                            new_processed_items.add(torrent_dir_name)
                             update_catalog_entry(torrent_dir_name, None, torrent_dir_name)
                             continue
 
@@ -296,10 +294,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                                 os.symlink(relative_source_path, target_file_path)
                             except OSError as e:
                                 print(f"Error creating relative symlink: {e}")
-                        new_processed_items.add(torrent_dir_name)
                         update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
 
-            new_processed_items.add(torrent_dir_name)
             update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
             
         except Exception as e:
