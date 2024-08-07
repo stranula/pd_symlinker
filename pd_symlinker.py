@@ -191,6 +191,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             grandparent_type = entry[11]
             grandparent_year = entry[12]
             actual_title = entry[14]
+            
+            target_file_path = None  # Ensure this is defined before usage
 
             if type_ == 'movie':
                 base_title = title
