@@ -36,15 +36,15 @@ def read_catalog_db():
         conn.close()
         return rows
 
-def update_catalog_entry(processed_dir_name, final_symlink_path, torrent_file_name):
+def update_catalog_entry(processed_dir_name, final_symlink_path, original_torrent_file_name, original_actual_name):
     with db_lock:
         conn = sqlite3.connect(DATABASE_PATH)
         c = conn.cursor()
         c.execute('''
             UPDATE catalog
             SET processed_dir_name = ?, final_symlink_path = ?
-            WHERE torrent_file_name = ?
-        ''', (processed_dir_name, final_symlink_path, torrent_file_name))
+            WHERE torrent_file_name = ? OR actual_name = ?
+        ''', (processed_dir_name, final_symlink_path, original_torrent_file_name, original_actual_name))
         conn.commit()
         conn.close()
 
@@ -173,6 +173,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             eid = entry[1]
             torrent_dir_name = entry[13]
             actual_title_name = entry[14]
+            original_torrent_dir_name = entry[13]
+            original_actual_title_name = entry[14]
 
             torrent_dir_path = find_best_match(torrent_dir_name, actual_title_name, src_dir)
             if not torrent_dir_path:
@@ -206,6 +208,12 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
                 if not os.path.exists(target_folder):
                     os.makedirs(target_folder, exist_ok=True)
+                    print(f"Created target folder: {target_folder}")
+
+                torrent_dir_path = find_best_match(torrent_dir_name, actual_title, src_dir)
+                if not torrent_dir_path:
+                    continue
+                print(f"Processing torrent directory: {torrent_dir_path}")
 
                 largest_file = None
                 largest_size = 0
@@ -229,10 +237,12 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         try:
                             relative_source_path = os.path.relpath(largest_file_path, os.path.dirname(target_file_path))
                             os.symlink(relative_source_path, target_file_path)
+                            update_catalog_entry(torrent_dir_name, target_file_path, original_torrent_dir_name, original_actual_name)
+                            print(f"Created relative symlink: {target_file_path} -> {relative_source_path}")
                         except OSError as e:
                             print(f"Error creating relative symlink: {e}")
-                    update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
-
+                    else:
+                        print(f"Symlink already exists: {target_file_path}")
 
             else:
                 base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
@@ -248,12 +258,20 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 if not os.path.exists(target_folder):
                     try:
                         os.makedirs(target_folder)
+                        print(f"Created target folder: {target_folder}")
                     except OSError as e:
                         print(f"Error creating target folder: {e}")
                         continue
+                        
+                torrent_dir_path = find_best_match(torrent_dir_name, actual_title, src_dir)
+                print(torrent_dir_path)
+                if not torrent_dir_path:
+                    continue
+                print(f"Processing torrent directory: {torrent_dir_path}")
 
                 for file_name in os.listdir(torrent_dir_path):
                     file_path = os.path.join(torrent_dir_path, file_name)
+                    print(f"Processing file: {file_path}")
 
                     if os.path.isfile(file_path):
                         file_ext = os.path.splitext(file_name)[1]
@@ -269,7 +287,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         existing_files = os.listdir(target_folder_season) if os.path.exists(target_folder_season) else []
                         episode_pattern = f"{base_title} ({base_year}) {{imdb-{imdb_id}}} - {episode_identifier} ["
                         if any(f.startswith(episode_pattern) and f.endswith(file_ext) for f in existing_files):
-                            update_catalog_entry(torrent_dir_name, None, torrent_dir_name)
+                            print(f"Symlink for {episode_identifier} already exists. Skipping file: {file_name}...Is this causing me problems???")
+                            update_catalog_entry(torrent_dir_name, None, original_torrent_dir_name, original_actual_name)
                             continue
 
                         resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
@@ -287,12 +306,13 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                             try:
                                 relative_source_path = os.path.relpath(file_path, os.path.dirname(target_file_path))
                                 os.symlink(relative_source_path, target_file_path)
+                                update_catalog_entry(torrent_dir_name, target_file_path, original_torrent_dir_name, original_actual_name)
+                                print(f"Created relative symlink: {target_file_path} -> {relative_source_path}")
+
                             except OSError as e:
                                 print(f"Error creating relative symlink: {e}")
-                        update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
 
-
-            update_catalog_entry(torrent_dir_name, target_file_path, torrent_dir_name)
+            update_catalog_entry(torrent_dir_name, target_file_path, original_torrent_dir_name, original_actual_name)
 
             
         except Exception as e:
