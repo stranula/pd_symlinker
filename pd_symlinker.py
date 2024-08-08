@@ -173,6 +173,10 @@ def extract_season_episode(file_name):
     return None, None
 
 
+def strip_extension(name):
+    return re.sub(r'\.\w{2,4}$', '', name)  # Removes common file extensions (e.g., .mp4, .mkv, .avi)
+
+
 def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_path):
     catalog_data = read_catalog_db()
 
@@ -180,12 +184,16 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
     src_directories = {sanitize_title(d): d for d in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, d))}
     
     # Makes a list of already handled items
-    handled_items = {sanitize_title(entry[13]) for entry in catalog_data if entry[16]}
+    handled_items = set()
+    handled_items.update({sanitize_title(entry[13]) for entry in catalog_data if entry[16]})
     handled_items.update({sanitize_title(entry[14]) for entry in catalog_data if entry[16]})
-    
+    handled_items.update({sanitize_title(strip_extension(entry[13])) for entry in catalog_data if entry[16]})
+    handled_items.update({sanitize_title(strip_extension(entry[14])) for entry in catalog_data if entry[16]})
+
     # Unprocessed directories
     unprocessed_directories = set(src_directories.keys()) - handled_items
     print(f'Unprocessed directories: {unprocessed_directories}')
+    time.sleep(60)
     
     processed_src_directories = set()
 
