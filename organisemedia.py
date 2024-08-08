@@ -8,6 +8,7 @@ import requests
 import string
 import time
 from colorama import init, Fore, Style
+import pickle
 
 init(autoreset=True)
 
@@ -489,7 +490,6 @@ def process_unmatched_anime(folder_path, split, force):
 
 
 def process_unaccounted_folder(folder_path, dest_dir):
-    print("did we make it here?")
     symlink_created = create_symlinks(folder_path, dest_dir, force=True, split=False)
     src_dir = folder_path
 
@@ -512,7 +512,6 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
     existing_symlinks = load_links('symlinks.pkl')
     ignored_files = load_ignored()
     symlink_created = []
-    print("at least I've made it this far")
 
     for root, dirs, files in os.walk(src_dir):
         if contains_episode(files):
