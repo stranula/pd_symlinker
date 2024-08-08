@@ -165,7 +165,6 @@ def extract_season_episode(file_name):
 
 def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_path):
     catalog_data = read_catalog_db()
-    processed_items = {entry[15] for entry in catalog_data if entry[15]}
 
     # List all directories in the src_dir
     src_directories = {sanitize_title(d): d for d in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, d))}
@@ -187,13 +186,9 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 if not torrent_dir_path:
                     continue
                 
-                if torrent_dir_name in processed_items:
-                    processed_src_directories.add(sanitize_title(torrent_dir_name))
+                if torrent_dir_path in processed_src_directories:
                     continue
-                    
-                if actual_title_name in processed_items:
-                    processed_src_directories.add(sanitize_title(actual_title_name))
-                    continue
+
 
                 title = entry[2]
                 type_ = entry[3]
