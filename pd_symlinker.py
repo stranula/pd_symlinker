@@ -52,7 +52,7 @@ def update_catalog_entry(processed_dir_name, final_symlink_path, id):
 
 
 def extract_year(query):
-    match = re.search(r'[\(\.\s_-](\d{4})[\)\.\s_-]', query.strip())
+    match = re.search(r'[(.\s_-](\d{4})[).\s_-]', query.strip())
     if match:
         year = int(match.group(1))
         if 1900 <= year <= datetime.now().year:
@@ -333,6 +333,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
         dir_path = os.path.join(src_dir, dir_name)
         print(f"Processing unaccounted folder: {dir_path}")
         process_unaccounted_folder(dir_path, DEST_DIR)
+
 
 def create_symlinks():
     try:
