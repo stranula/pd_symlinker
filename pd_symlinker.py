@@ -26,6 +26,7 @@ db_lock = threading.Lock()
 # Initialize colorama
 init(autoreset=True)
 
+
 def read_catalog_db():
     with db_lock:
         conn = sqlite3.connect(DATABASE_PATH)
@@ -34,6 +35,7 @@ def read_catalog_db():
         rows = c.fetchall()
         conn.close()
         return rows
+
 
 def update_catalog_entry(processed_dir_name, final_symlink_path, original_torrent_file_name, original_actual_name):
     with db_lock:
@@ -47,6 +49,7 @@ def update_catalog_entry(processed_dir_name, final_symlink_path, original_torren
         conn.commit()
         conn.close()
 
+
 def extract_year(query):
     match = re.search(r'[\(\.\s_-](\d{4})[\)\.\s_-]', query.strip())
     if match:
@@ -54,6 +57,7 @@ def extract_year(query):
         if 1900 <= year <= datetime.now().year:
             return year
     return None
+
 
 def extract_resolution(name, parent_folder_name=None, file_path=None):
     resolution_match = re.search(r'(\d{3,4}p)', name, re.IGNORECASE)
@@ -79,14 +83,17 @@ def extract_resolution(name, parent_folder_name=None, file_path=None):
         return None
     return None
 
+
 def sanitize_title(name):
     return re.sub(r'[^a-zA-Z0-9\s]', ' ', name).strip()  # Don't Preserve periods
+
 
 def clean_filename(filename):
     filename = re.sub(r' - - ', ' - ', filename)
     filename = re.sub(r' +', ' ', filename).strip()  # Remove extra spaces
     filename = re.sub(r' -$', '', filename)  # Remove trailing dash
     return filename
+
 
 def extract_id(eid_string, preferred='imdb', fallback='tmdb'):
     ids = eid_string.split(', ')
@@ -97,6 +104,7 @@ def extract_id(eid_string, preferred='imdb', fallback='tmdb'):
         if fallback in id_str:
             return sanitize_title(id_str.split(f'//')[1])
     return 'unknown'
+
 
 def find_best_match(torrent_dir_name, actual_title, src_dir):
     try:
@@ -146,6 +154,7 @@ def find_best_match(torrent_dir_name, actual_title, src_dir):
         print(f"Error finding best match: {e}")
     return None
 
+
 def extract_season_episode(file_name):
     patterns = [
         r'[Ss](\d{1,2})[Ee](\d{1,2})',
@@ -163,13 +172,14 @@ def extract_season_episode(file_name):
             return season, episode
     return None, None
 
+
 def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_path):
     catalog_data = read_catalog_db()
 
     # List all directories in the src_dir
     src_directories = {sanitize_title(d): d for d in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, d))}
     
-    #Makes a list of already handled items
+    # Makes a list of already handled items
     handled_items = {sanitize_title(entry[13]) for entry in catalog_data if entry[16]}
     handled_items.update({sanitize_title(entry[14]) for entry in catalog_data if entry[16]})
     
@@ -178,7 +188,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
     print(f'Unprocessed directories: {unprocessed_directories}')
     
     processed_src_directories = set()
-
 
     for entry in catalog_data:
         torrent_dir_name = entry[13]
@@ -196,7 +205,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 
                 if torrent_dir_path in processed_src_directories:
                     continue
-
 
                 title = entry[2]
                 type_ = entry[3]
@@ -338,6 +346,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
         dir_path = os.path.join(src_dir, src_directories[dir_name])
         print(f"Processing unaccounted folder: {dir_path}")
         process_unaccounted_folder(dir_path, DEST_DIR)  # Replace with your actual processing function
+
 
 def create_symlinks():
     try:
