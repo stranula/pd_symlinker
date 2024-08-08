@@ -168,6 +168,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
     processed_items = {entry[15] for entry in catalog_data if entry[15]}
 
     for entry in catalog_data:
+        if entry[16]:  # Check if entry[16] is not empty or None
+            continue
         try:
             eid = entry[1]
             torrent_dir_name = entry[13]
