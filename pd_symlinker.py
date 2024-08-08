@@ -38,15 +38,15 @@ def read_catalog_db():
         return rows
 
 
-def update_catalog_entry(processed_dir_name, final_symlink_path, original_torrent_file_name, original_actual_name, src_dir_path):
+def update_catalog_entry(processed_dir_name, final_symlink_path, src_dir_path, id):
     with db_lock:
         conn = sqlite3.connect(DATABASE_PATH)
         c = conn.cursor()
         c.execute('''
             UPDATE catalog
             SET processed_dir_name = ?, final_symlink_path = ?, src_dir_path = ?
-            WHERE torrent_file_name = ? OR actual_title = ?
-        ''', (processed_dir_name, final_symlink_path, src_dir_path, original_torrent_file_name, original_actual_name))
+            WHERE id = ?
+        ''', (processed_dir_name, final_symlink_path, src_dir_path, id))
         conn.commit()
         conn.close()
 
@@ -183,6 +183,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
     for entry in catalog_data:
         try:
+            id = entry[0]
             eid = entry[1]
             title = entry[2]
             type_ = entry[3]
@@ -318,13 +319,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                                 print(f"Error creating relative symlink: {e}")
                                 target_folder = None
             if target_folder:
-                update_catalog_entry(
-                    processed_dir_name=torrent_file_name,
-                    final_symlink_path=target_folder,
-                    original_torrent_file_name=catalog_torrent_file_name,
-                    original_actual_name=catalog_actual_title_name,
-                    src_dir_path=src_dir  # Include the src_dir path
-                )
+                update_catalog_entry(torrent_dir_path, target_folder, src_dir, id)
+
                 processed_src_directories.add(sanitize_title(torrent_file_name))
                 
         except Exception as e:
