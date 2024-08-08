@@ -38,15 +38,15 @@ def read_catalog_db():
         return rows
 
 
-def update_catalog_entry(processed_dir_name, final_symlink_path, src_dir_path, id):
+def update_catalog_entry(processed_dir_name, final_symlink_path, id):
     with db_lock:
         conn = sqlite3.connect(DATABASE_PATH)
         c = conn.cursor()
         c.execute('''
             UPDATE catalog
-            SET processed_dir_name = ?, final_symlink_path = ?, src_dir_path = ?
+            SET processed_dir_name = ?, final_symlink_path = ?
             WHERE id = ?
-        ''', (processed_dir_name, final_symlink_path, src_dir_path, id))
+        ''', (processed_dir_name, final_symlink_path, id))
         conn.commit()
         conn.close()
 
@@ -180,6 +180,10 @@ def strip_extension(name):
 
 def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_path):
     catalog_data = read_catalog_db()
+    processed_dir_names = {os.path.basename(entry[15]) for entry in catalog_data if entry[15]}
+    src_directories = [d for d in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, d))]
+    unprocessed_directories = set(src_directories) - processed_dir_names
+    print(f"Unprocessed {unprocessed_directories}")
 
     for entry in catalog_data:
         try:
@@ -202,7 +206,6 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             catalog_actual_title = entry[14]
             processed_dir_name = entry[15]
             final_symlink_path = entry[16]
-            src_dir_path = entry[17]
 
             if type_ == 'movie':
                 base_title = title
@@ -295,7 +298,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         existing_files = os.listdir(target_folder_season) if os.path.exists(target_folder_season) else []
                         episode_pattern = f"{base_title} ({base_year}) {{imdb-{imdb_id}}} - {episode_identifier} ["
                         if any(f.startswith(episode_pattern) and f.endswith(file_ext) for f in existing_files):
-                            print(f"Symlink for {episode_identifier} already exists. Skipping file: {file_name}...Is this causing me problems???")
+                            print(f"Symlink for {episode_identifier} already exists. Skipping file: {file_name}")
                             continue
 
                         resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
@@ -319,10 +322,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                                 print(f"Error creating relative symlink: {e}")
                                 target_folder = None
             if target_folder:
-                update_catalog_entry(torrent_dir_path, target_folder, src_dir, id)
+                update_catalog_entry(torrent_dir_path, target_folder, id)
 
-                processed_src_directories.add(sanitize_title(torrent_file_name))
-                
         except Exception as e:
             print(f"Error processing entry: {e}")
 
