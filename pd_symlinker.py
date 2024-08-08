@@ -239,6 +239,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                             print(f"Created relative symlink: {target_file_path} -> {relative_source_path}")
                         except OSError as e:
                             print(f"Error creating relative symlink: {e}")
+                            target_folder = None
+
                     else:
                         print(f"Symlink already exists: {target_file_path}")
 
@@ -306,6 +308,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
                             except OSError as e:
                                 print(f"Error creating relative symlink: {e}")
+                                target_folder = None
             if target_folder:
                 update_catalog_entry(torrent_dir_name, target_folder, original_torrent_dir_name, original_actual_name)
             
