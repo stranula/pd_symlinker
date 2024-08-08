@@ -42,7 +42,7 @@ def update_catalog_entry(processed_dir_name, final_symlink_path, original_torren
         c.execute('''
             UPDATE catalog
             SET processed_dir_name = ?, final_symlink_path = ?
-            WHERE torrent_file_name = ? OR actual_name = ?
+            WHERE torrent_file_name = ? OR actual_title = ?
         ''', (processed_dir_name, final_symlink_path, original_torrent_file_name, original_actual_name))
         conn.commit()
         conn.close()
