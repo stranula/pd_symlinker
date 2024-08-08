@@ -36,20 +36,11 @@ def insert_unaccounted_data(src_dir, file_name, matched_imdb_id, year, symlink_t
         conn.close()
 
 
-def save_symlink(src_file, dest_file):
-    with db_lock:
-        conn = sqlite3.connect(DATABASE_PATH)
-        c = conn.cursor()
-        c.execute('INSERT INTO symlinks (src_file, dest_file) VALUES (?, ?)', (src_file, dest_file))
-        conn.commit()
-        conn.close()
-
-
 def load_symlinks():
     with db_lock:
         conn = sqlite3.connect(DATABASE_PATH)
         c = conn.cursor()
-        c.execute('SELECT src_file, dest_file FROM symlinks')
+        c.execute('SELECT src_dir, symlink_filename FROM unaccounted WHERE symlink_filename IS NOT NULL')
         rows = c.fetchall()
         conn.close()
         return set(rows)
