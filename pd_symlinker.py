@@ -180,6 +180,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
         if torrent_dir_name and sanitize_title(torrent_dir_name) in src_directories:
             if entry[16]:  # Check if entry[16] is not empty or None
                 processed_src_directories.add(sanitize_title(torrent_dir_name))
+                processed_src_directories.add(sanitize_title(actual_title_name))
                 continue
             try:
                 torrent_dir_path = find_best_match(torrent_dir_name, actual_title_name, src_dir)
