@@ -37,15 +37,15 @@ def read_catalog_db():
         return rows
 
 
-def update_catalog_entry(processed_dir_name, final_symlink_path, original_torrent_file_name, original_actual_name):
+def update_catalog_entry(processed_dir_name, final_symlink_path, original_torrent_file_name, original_actual_name, src_dir_path):
     with db_lock:
         conn = sqlite3.connect(DATABASE_PATH)
         c = conn.cursor()
         c.execute('''
             UPDATE catalog
-            SET processed_dir_name = ?, final_symlink_path = ?
+            SET processed_dir_name = ?, final_symlink_path = ?, src_dir_path = ?
             WHERE torrent_file_name = ? OR actual_title = ?
-        ''', (processed_dir_name, final_symlink_path, original_torrent_file_name, original_actual_name))
+        ''', (processed_dir_name, final_symlink_path, src_dir_path, original_torrent_file_name, original_actual_name))
         conn.commit()
         conn.close()
 
@@ -192,6 +192,10 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
 
     # Unprocessed directories
     unprocessed_directories = set(src_directories.keys()) - handled_items
+
+    for directory in unprocessed_directories:
+        find_best_match(torrent_dir_name, actual_title_name, src_dir)
+
     print(f'Unprocessed directories: {unprocessed_directories}')
     time.sleep(60)
     
@@ -342,8 +346,13 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                                     print(f"Error creating relative symlink: {e}")
                                     target_folder = None
                 if target_folder:
-                    update_catalog_entry(torrent_dir_name, target_folder, original_torrent_dir_name, original_actual_name)
-                    processed_src_directories.add(sanitize_title(torrent_dir_name))
+                    update_catalog_entry(
+                        processed_dir_name=torrent_dir_name,
+                        final_symlink_path=target_folder,
+                        original_torrent_file_name=torrent_dir_name,
+                        original_actual_name=actual_title_name,
+                        src_dir_path=src_dir  # Include the src_dir path
+                    )                    processed_src_directories.add(sanitize_title(torrent_dir_name))
                 
             except Exception as e:
                 print(f"Error processing entry: {e}")
