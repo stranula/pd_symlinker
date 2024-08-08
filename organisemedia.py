@@ -52,6 +52,7 @@ def are_similar(folder_name, show_name, threshold=0.8):
     return similarity >= threshold
 
 async def process_unaccounted_folder(folder_path, dest_dir):
+    print("did we make it here?")
     symlink_created = await create_symlinks(folder_path, dest_dir, force=True, split=False)
     src_dir = folder_path
 
