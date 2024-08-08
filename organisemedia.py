@@ -514,6 +514,28 @@ def process_unmatched_anime(folder_path, split, force):
             log_message("WARN", f"{file} in {root}")
     return matched_shows
 
+def insert_symlink(src_file, dest_file, src_dir):
+    with db_lock:
+        conn = sqlite3.connect(DATABASE_PATH)
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO unaccounted (src_dir, file_name, matched_imdb_id, year, symlink_top_folder, symlink_filename)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (src_dir, src_file, '', '', os.path.dirname(dest_file), dest_file))
+        conn.commit()
+        conn.close()
+
+def insert_ignored(file_path, src_dir):
+    with db_lock:
+        conn = sqlite3.connect(DATABASE_PATH)
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO unaccounted (src_dir, file_name, matched_imdb_id, year, symlink_top_folder, symlink_filename)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (src_dir, file_path, '', '', '', ''))
+        conn.commit()
+        conn.close()
+
 
 def process_unaccounted_folder(folder_path, dest_dir):
     symlink_created = create_symlinks(folder_path, dest_dir, force=True, split=False)
@@ -554,7 +576,7 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
                 )
                 if symlink_exists:
                     ignored_files.add(src_file)
-                    save_ignored(src_file)  # Save ignored file to database
+                    insert_ignored(src_file, src_dir)  # Insert ignored file to database
                     continue
 
                 episode_match = re.search(r'(.*?)(S\d{2}E\d{2,3}(?:\-E\d{2})?|\b\d{1,2}x\d{2}\b|S\d{2}E\d{2}-?(?:E\d{2})|S\d{2,3} ?E\d{2}(?:\+E\d{2})?)', file, re.IGNORECASE)
@@ -580,7 +602,11 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
                 else:
                     new_name = name
 
-                season_number = re.search(r'S(\d{2}) ?E\d{2,3}', episode_match.group(2), re.IGNORECASE).group(1)
+                season_number_match = re.search(r'S(\d{2}) ?E\d{2,3}', episode_match.group(2), re.IGNORECASE)
+                if not season_number_match:
+                    log_message('ERROR', f"Could not extract season number from file: {file}")
+                    continue
+                season_number = season_number_match.group(1)
                 season_folder = f"Season {int(season_number):02d}"
 
                 show_folder = re.sub(r'\s+$|_+$|-+$|(\()$', '', show_name).rstrip()
@@ -605,7 +631,11 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
                 if file_name:
                     new_name = file_name.group(0) + ' '
                 if re.search(r'\{(tmdb-\d+|imdb-tt\d+)\}', show_folder):
-                    year = re.search(r'\((\d{4})\)', show_folder).group(1)
+                    year_match = re.search(r'\((\d{4})\)', show_folder)
+                    if not year_match:
+                        log_message('ERROR', f"Could not extract year from show folder: {show_folder}")
+                        continue
+                    year = year_match.group(1)
                     new_name = get_episode_details(showid, episode_match.group(2), show_folder, year)
                 if resolution:
                     new_name = f"{new_name} [{resolution}] {ext}"
@@ -626,7 +656,7 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
 
                 if os.path.exists(dest_file) and not os.path.islink(dest_file):
                     ignored_files.add(dest_file)
-                    save_ignored(dest_file)  # Save ignored file to database
+                    insert_ignored(dest_file, src_dir)  # Insert ignored file to database
                     continue
 
                 if os.path.isdir(src_file):
@@ -634,7 +664,7 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
                 else:
                     relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
                     os.symlink(relative_source_path, dest_file)
-                    save_symlink(src_file, dest_file)  # Save symlink to database
+                    insert_symlink(src_file, dest_file, src_dir)  # Insert symlink to database
                     symlink_created.append(dest_file)
 
                 clean_destination = os.path.basename(dest_file)
