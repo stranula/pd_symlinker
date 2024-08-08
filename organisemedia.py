@@ -36,6 +36,25 @@ def insert_unaccounted_data(src_dir, file_name, matched_imdb_id, year, symlink_t
         conn.close()
 
 
+def save_symlink(src_file, dest_file):
+    with db_lock:
+        conn = sqlite3.connect(DATABASE_PATH)
+        c = conn.cursor()
+        c.execute('INSERT INTO symlinks (src_file, dest_file) VALUES (?, ?)', (src_file, dest_file))
+        conn.commit()
+        conn.close()
+
+
+def load_symlinks():
+    with db_lock:
+        conn = sqlite3.connect(DATABASE_PATH)
+        c = conn.cursor()
+        c.execute('SELECT src_file, dest_file FROM symlinks')
+        rows = c.fetchall()
+        conn.close()
+        return set(rows)
+
+
 def log_message(log_level, message):
     current_time = time.strftime("%Y-%m-%d %H:%M:%S")
     if log_level in LOG_LEVELS:
@@ -232,16 +251,23 @@ def load_links(file_path):
         return set()
 
 
-def save_ignored(ignored_files):
-    with open('ignored.pkl', 'wb') as f:
-        pickle.dump(ignored_files, f)
+def save_ignored(file_path):
+    with db_lock:
+        conn = sqlite3.connect(DATABASE_PATH)
+        c = conn.cursor()
+        c.execute('INSERT INTO ignored_files (file_path) VALUES (?)', (file_path,))
+        conn.commit()
+        conn.close()
 
 
 def load_ignored():
-    if os.path.exists('ignored.pkl'):
-        with open('ignored.pkl', 'rb') as f:
-            return pickle.load(f)
-    return set()
+    with db_lock:
+        conn = sqlite3.connect(DATABASE_PATH)
+        c = conn.cursor()
+        c.execute('SELECT file_path FROM ignored_files')
+        rows = c.fetchall()
+        conn.close()
+        return set(row[0] for row in rows)
 
 
 def get_episode_details(series_id, episode_identifier, name, year):
@@ -509,9 +535,10 @@ def process_unaccounted_folder(folder_path, dest_dir):
 
 
 def create_symlinks(src_dir, dest_dir, force=False, split=False):
-    existing_symlinks = load_links('symlinks.pkl')
+    existing_symlinks = load_symlinks()
     ignored_files = load_ignored()
     symlink_created = []
+    print("at least I've made it this far")
 
     for root, dirs, files in os.walk(src_dir):
         if contains_episode(files):
@@ -527,6 +554,7 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
                 )
                 if symlink_exists:
                     ignored_files.add(src_file)
+                    save_ignored(src_file)  # Save ignored file to database
                     continue
 
                 episode_match = re.search(r'(.*?)(S\d{2}E\d{2,3}(?:\-E\d{2})?|\b\d{1,2}x\d{2}\b|S\d{2}E\d{2}-?(?:E\d{2})|S\d{2,3} ?E\d{2}(?:\+E\d{2})?)', file, re.IGNORECASE)
@@ -598,6 +626,7 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
 
                 if os.path.exists(dest_file) and not os.path.islink(dest_file):
                     ignored_files.add(dest_file)
+                    save_ignored(dest_file)  # Save ignored file to database
                     continue
 
                 if os.path.isdir(src_file):
@@ -605,8 +634,7 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
                 else:
                     relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
                     os.symlink(relative_source_path, dest_file)
-                    existing_symlinks.add((src_file, dest_file))
-                    save_link(existing_symlinks, 'symlinks.pkl')
+                    save_symlink(src_file, dest_file)  # Save symlink to database
                     symlink_created.append(dest_file)
 
                 clean_destination = os.path.basename(dest_file)
@@ -615,5 +643,4 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
                 # Insert unaccounted data into the database
                 insert_unaccounted_data(src_dir, file, showid, year, show_folder, new_name)
 
-    save_ignored(ignored_files)
     return symlink_created
