@@ -169,8 +169,16 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
     # List all directories in the src_dir
     src_directories = {sanitize_title(d): d for d in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, d))}
     
-    # Create a set to keep track of processed directories
+    #Makes a list of already handled items
+    handled_items = {sanitize_title(entry[13]) for entry in catalog_data if entry[16]}
+    handled_items.update({sanitize_title(entry[14]) for entry in catalog_data if entry[16]})
+    
+    # Unprocessed directories
+    unprocessed_directories = set(src_directories.keys()) - handled_items
+    print(f'Unprocessed directories: {unprocessed_directories})
+    
     processed_src_directories = set()
+
 
     for entry in catalog_data:
         torrent_dir_name = entry[13]
