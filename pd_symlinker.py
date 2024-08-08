@@ -179,8 +179,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             if not torrent_dir_path:
                 continue
             
-            #if torrent_dir_path in processed_items:
-            #    continue
+            if torrent_dir_path in processed_items:
+                continue
 
             title = entry[2]
             type_ = entry[3]
@@ -236,14 +236,11 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         try:
                             relative_source_path = os.path.relpath(largest_file_path, os.path.dirname(target_file_path))
                             os.symlink(relative_source_path, target_file_path)
-                            update_catalog_entry(torrent_dir_name, target_file_path, original_torrent_dir_name, original_actual_name)
                             print(f"Created relative symlink: {target_file_path} -> {relative_source_path}")
                         except OSError as e:
                             print(f"Error creating relative symlink: {e}")
                     else:
                         print(f"Symlink already exists: {target_file_path}")
-                        update_catalog_entry(torrent_dir_name, target_file_path, original_torrent_dir_name, original_actual_name)
-
 
             else:
                 base_title = grandparent_title if grandparent_title else parent_title if parent_title else title
