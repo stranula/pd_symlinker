@@ -500,9 +500,9 @@ async def process_unmatched_anime(folder_path, split, force):
     return matched_shows
 
 
-async def process_unaccounted_folder(folder_path, dest_dir):
+def process_unaccounted_folder(folder_path, dest_dir):
     print("did we make it here?")
-    symlink_created = await create_symlinks(folder_path, dest_dir, force=True, split=False)
+    symlink_created = create_symlinks(folder_path, dest_dir, force=True, split=False)
     src_dir = folder_path
 
     for root, dirs, files in os.walk(folder_path):
