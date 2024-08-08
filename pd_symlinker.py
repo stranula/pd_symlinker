@@ -333,7 +333,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
     for dir_name in unprocessed_directories:
         dir_path = os.path.join(src_dir, src_directories[dir_name])
         print(f"Processing unaccounted folder: {dir_path}")
-        process_unaccounted_folder(dir_path)  # Replace with your actual processing function
+        process_unaccounted_folder(dir_path, DEST_DIR)  # Replace with your actual processing function
 
 def create_symlinks():
     try:
