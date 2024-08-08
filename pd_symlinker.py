@@ -166,6 +166,8 @@ def extract_season_episode(file_name):
 def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_path):
     catalog_data = read_catalog_db()
     processed_items = {entry[15] for entry in catalog_data if entry[5]}
+    print(processed_items)
+    time.sleep(30)
 
     for entry in catalog_data:
         try:
