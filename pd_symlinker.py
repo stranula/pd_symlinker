@@ -178,6 +178,9 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             torrent_dir_path = find_best_match(torrent_dir_name, actual_title_name, src_dir)
             if not torrent_dir_path:
                 continue
+            
+            if torrent_dir_path is in processed_items:
+                continue
 
             title = entry[2]
             type_ = entry[3]
@@ -283,7 +286,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         episode_pattern = f"{base_title} ({base_year}) {{imdb-{imdb_id}}} - {episode_identifier} ["
                         if any(f.startswith(episode_pattern) and f.endswith(file_ext) for f in existing_files):
                             print(f"Symlink for {episode_identifier} already exists. Skipping file: {file_name}...Is this causing me problems???")
-                            update_catalog_entry(torrent_dir_name, None, original_torrent_dir_name, original_actual_name)
+                            update_catalog_entry(torrent_dir_name, target_folder, original_torrent_dir_name, original_actual_name)
                             continue
 
                         resolution = extract_resolution(file_name, parent_folder_name=torrent_dir_path, file_path=file_path)
