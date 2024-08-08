@@ -179,7 +179,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
             if not torrent_dir_path:
                 continue
             
-            if torrent_dir_path is in processed_items:
+            if torrent_dir_path in processed_items:
                 continue
 
             title = entry[2]
