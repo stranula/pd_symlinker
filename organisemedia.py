@@ -73,6 +73,7 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
     existing_symlinks = load_links('symlinks.pkl')
     ignored_files = load_ignored()
     symlink_created = []
+    print("at least I've made it this far")
 
     for root, dirs, files in os.walk(src_dir):
         if contains_episode(files):
