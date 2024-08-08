@@ -321,14 +321,14 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                 if target_folder:
                     update_catalog_entry(torrent_dir_path, target_folder, id)
 
-        except Exception as e:
-            print(f"Error processing entry: {e}")
+            except Exception as e:
+                print(f"Error processing entry: {e}")
 
     processed_dir_names = {os.path.basename(entry[15]) for entry in catalog_data if entry[15]}
     src_directories = [d for d in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, d))]
     unprocessed_directories = set(src_directories) - processed_dir_names
     print(f"Unprocessed {unprocessed_directories}")
-    
+
     for dir_name in unprocessed_directories:
         dir_path = os.path.join(src_dir, dir_name)
         print(f"Processing unaccounted folder: {dir_path}")
