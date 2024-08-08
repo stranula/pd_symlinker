@@ -508,7 +508,7 @@ def process_unaccounted_folder(folder_path, dest_dir):
     for root, dirs, files in os.walk(folder_path):
         for file_name in files:
             if contains_episode([file_name]):
-                show_name, showid, showdir = await get_series_info(folder_path)
+                show_name, showid, showdir = get_series_info(folder_path)
                 symlink_top_folder = showdir
                 season_number = re.search(r'S(\d{2})E\d{2,3}', file_name, re.IGNORECASE).group(1)
                 season_folder = f"Season {int(season_number):02d}"
