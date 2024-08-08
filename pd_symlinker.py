@@ -184,6 +184,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
     src_directories = [d for d in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, d))]
     unprocessed_directories = set(src_directories) - processed_dir_names
     print(f"Unprocessed {unprocessed_directories}")
+    time.sleep(60)
 
     for entry in catalog_data:
         try:
