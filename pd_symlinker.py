@@ -353,7 +353,8 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
                         original_torrent_file_name=torrent_dir_name,
                         original_actual_name=actual_title_name,
                         src_dir_path=src_dir  # Include the src_dir path
-                    )                    processed_src_directories.add(sanitize_title(torrent_dir_name))
+                    )
+                    processed_src_directories.add(sanitize_title(torrent_dir_name))
                 
             except Exception as e:
                 print(f"Error processing entry: {e}")
