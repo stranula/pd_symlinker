@@ -175,7 +175,7 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
     
     # Unprocessed directories
     unprocessed_directories = set(src_directories.keys()) - handled_items
-    print(f'Unprocessed directories: {unprocessed_directories})
+    print(f'Unprocessed directories: {unprocessed_directories}')
     
     processed_src_directories = set()
 
