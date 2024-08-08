@@ -4,10 +4,10 @@ import shutil
 import sqlite3
 import threading
 import difflib
-import asyncio
-import aiohttp
+import requests
+import string
+import time
 from colorama import init, Fore, Style
-
 
 init(autoreset=True)
 
@@ -21,9 +21,6 @@ LOG_LEVELS = {
     "WARN": {"level": 40, "color": Fore.YELLOW},
     "DEBUG": {"level": 50, "color": Fore.LIGHTMAGENTA_EX}
 }
-
-print_lock = asyncio.Lock()
-input_lock = asyncio.Lock()
 
 
 def insert_unaccounted_data(src_dir, file_name, matched_imdb_id, year, symlink_top_folder, symlink_filename):
@@ -66,7 +63,7 @@ def contains_episode(files):
     return False
 
 
-async def get_series_info(series_name, year=None, split=False, force=False):
+def get_series_info(series_name, year=None, split=False, force=False):
     global _api_cache
     log_message("INFO", f"Current file: {series_name} year: {year}")
     shows_dir = "shows"
@@ -112,7 +109,7 @@ async def get_series_info(series_name, year=None, split=False, force=False):
             for i, meta in enumerate(metas[:3]):
                 print(Fore.CYAN + f"{i + 1}: {meta['name']} ({meta.get('releaseInfo', 'Unknown year')})")
 
-            selected_index = await aioconsole.ainput(
+            selected_index = input(
                 Fore.GREEN + "Enter the number of the correct result (or press Enter to choose the first option): " + Style.RESET_ALL)
             if selected_index.strip().isdigit() and 1 <= int(selected_index) <= len(metas):
                 selected_index = int(selected_index) - 1
@@ -123,7 +120,7 @@ async def get_series_info(series_name, year=None, split=False, force=False):
             for i, meta in enumerate(metas[:3]):
                 print(Fore.CYAN + f"{i + 1}: {meta['name']} ({meta.get('releaseInfo', 'Unknown year')})")
 
-            selected_index = await aioconsole.ainput(
+            selected_index = input(
                 Fore.GREEN + "Enter the number of your choice, or enter IMDb ID directly:  " + Style.RESET_ALL)
             if selected_index.lower().startswith('tt'):
                 url = f"https://v3-cinemeta.strem.io/meta/series/{selected_index}.json"
@@ -264,7 +261,7 @@ def get_episode_details(series_id, episode_identifier, name, year):
     else:
         year = releaseInfo
     year = re.match(r'\b\d{4}\b', year).group()
-    match = re.search(r'(S\d{2,3} ?E\d{2}\-E\d{2})', episode_identifier)
+    match = re.search(r'(S\d{2,3} ?E\d{2}-E\d{2})', episode_identifier)
     if match:
         return f"{name} ({year}) {{imdb-{series_id}}} - {episode_identifier.upper()}"
 
@@ -286,7 +283,7 @@ def get_episode_details(series_id, episode_identifier, name, year):
     return f"{meta.get('name')} ({year}) {{imdb-{series_id}}} - {episode_identifier.upper()}"
 
 
-async def get_movie_info(title, year=None, force=True):
+def get_movie_info(title, year=None, force=True):
     global _api_cache
     formatted_title = title.replace(" ", "%20")
     cache_key = f"movie_{formatted_title}_{year}"
@@ -295,102 +292,93 @@ async def get_movie_info(title, year=None, force=True):
         return _api_cache[cache_key]
 
     url = f"https://v3-cinemeta.strem.io/catalog/movie/top/search={formatted_title}.json"
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url) as response:
-                async with print_lock:
-                    if response.status == 404:
-                        imdb_id = await aioconsole.ainput(
-                            f"{Fore.YELLOW}Movie '{title}' not found. {Fore.WHITE}Please enter the IMDb ID: ")
-                        if imdb_id:
-                            url = f"https://v3-cinemeta.strem.io/catalog/movie/top/search={imdb_id}.json"
-                            async with session.get(url) as response:
-                                pass
-                        else:
-                            log_message('WARN', "IMDB id not provided, returning default title and dir")
-                            return title
+    response = requests.get(url, timeout=10)
+    if response.status_code == 404:
+        imdb_id = input(f"{Fore.YELLOW}Movie '{title}' not found. {Fore.WHITE}Please enter the IMDb ID: ")
+        if imdb_id:
+            url = f"https://v3-cinemeta.strem.io/catalog/movie/top/search={imdb_id}.json"
+            response = requests.get(url)
+        else:
+            log_message('WARN', "IMDB id not provided, returning default title and dir")
+            return title
 
-                    if response.status != 200:
-                        log_message('ERROR', f"Error fetching movie information: HTTP {response.status}")
-                        return title
-                try:
-                    movie_data = await response.json()
-                except aiohttp.ContentTypeError:
-                    log_message('ERROR', "Error decoding JSON response")
-                    return None
+    if response.status_code != 200:
+        log_message('ERROR', f"Error fetching movie information: HTTP {response.status}")
+        return title
 
-                if 'metas' in movie_data and movie_data['metas']:
-                    movie_options = movie_data['metas']
-                    matched = False
-                    for movie_info in movie_options:
+    try:
+        movie_data = response.json()
+    except ValueError:
+        log_message('ERROR', "Error decoding JSON response")
+        return None
+
+    if 'metas' in movie_data and movie_data['metas']:
+        movie_options = movie_data['metas']
+        matched = False
+        for movie_info in movie_options:
+            imdb_id = movie_info.get('imdb_id')
+            movie_title = movie_info.get('name')
+            year_info = movie_info.get('releaseInfo')
+
+            if are_similar(title.lower().strip(), movie_title.lower(), 0.90):
+                proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
+                _api_cache[cache_key] = proper_name
+                return proper_name
+        if force:
+            chosen_movie = movie_options[0]
+            imdb_id = chosen_movie.get('imdb_id')
+            movie_title = chosen_movie.get('name')
+            year_info = chosen_movie.get('releaseInfo')
+            proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
+            return proper_name
+        if not matched:
+            log_message('WARN',
+                        f"No exact match found for {title}. Please choose from the following options or enter IMDb ID directly:")
+            for i, movie_info in enumerate(movie_options[:3]):
+                imdb_id = movie_info.get('imdb_id')
+                movie_title = movie_info.get('name')
+                year_info = movie_info.get('releaseInfo')
+                log_message('INFO', f"{i + 1}. {movie_title} ({year_info})")
+            choice = input("Enter the number of your choice, or enter IMDb ID directly: ")
+            if choice.lower().startswith('tt'):
+                imdb_id = choice
+                url = f"https://cinemeta-live.strem.io/meta/movie/{imdb_id}.json"
+                response = requests.get(url)
+                if response.status == 200:
+                    movie_data = response.json()
+                    if 'meta' in movie_data and movie_data['meta']:
+                        movie_info = movie_data['meta']
                         imdb_id = movie_info.get('imdb_id')
                         movie_title = movie_info.get('name')
                         year_info = movie_info.get('releaseInfo')
-
-                        if are_similar(title.lower().strip(), movie_title.lower(), 0.90):
-                            proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
-                            _api_cache[cache_key] = proper_name
-                            return proper_name
-                    if force:
-                        chosen_movie = movie_options[0]
+                        proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
+                        _api_cache[cache_key] = proper_name
+                        return proper_name
+                    else:
+                        log_message('ERROR', "No movie found with the provided IMDb ID")
+                        return title
+                else:
+                    log_message('ERROR', "Error fetching movie information with IMDb ID")
+                    return title
+            else:
+                try:
+                    choice = int(choice) - 1
+                    if 0 <= choice < len(movie_options[:3]):
+                        chosen_movie = movie_options[choice]
                         imdb_id = chosen_movie.get('imdb_id')
                         movie_title = chosen_movie.get('name')
                         year_info = chosen_movie.get('releaseInfo')
                         proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
                         return proper_name
-                    if not matched:
-                        async with print_lock:
-                            log_message('WARN',
-                                        f"No exact match found for {title}. Please choose from the following options or enter IMDb ID directly:")
-                            for i, movie_info in enumerate(movie_options[:3]):
-                                imdb_id = movie_info.get('imdb_id')
-                                movie_title = movie_info.get('name')
-                                year_info = movie_info.get('releaseInfo')
-                                log_message('INFO', f"{i + 1}. {movie_title} ({year_info})")
-                            choice = await aioconsole.ainput(
-                                "Enter the number of your choice, or enter IMDb ID directly: ")
-                            if choice.lower().startswith('tt'):
-                                imdb_id = choice
-                                url = f"https://cinemeta-live.strem.io/meta/movie/{imdb_id}.json"
-                                async with session.get(url) as response:
-                                    if response.status == 200:
-                                        movie_data = await response.json()
-                                        if 'meta' in movie_data and movie_data['meta']:
-                                            movie_info = movie_data['meta']
-                                            imdb_id = movie_info.get('imdb_id')
-                                            movie_title = movie_info.get('name')
-                                            year_info = movie_info.get('releaseInfo')
-                                            proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
-                                            _api_cache[cache_key] = proper_name
-                                            return proper_name
-                                        else:
-                                            log_message('ERROR', "No movie found with the provided IMDb ID")
-                                            return title
-                                    else:
-                                        log_message('ERROR', "Error fetching movie information with IMDb ID")
-                                        return title
-                            else:
-                                try:
-                                    choice = int(choice) - 1
-                                    if 0 <= choice < len(movie_options[:3]):
-                                        chosen_movie = movie_options[choice]
-                                        imdb_id = chosen_movie.get('imdb_id')
-                                        movie_title = chosen_movie.get('name')
-                                        year_info = chosen_movie.get('releaseInfo')
-                                        proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
-                                        return proper_name
-                                    else:
-                                        log_message('WARN', f"Invalid choice, returning '{title}'")
-                                        return title
-                                except ValueError:
-                                    log_message('WARN', f"Invalid input, returning '{title}'")
-                                    return title
-        except aiohttp.ClientError as e:
-            log_message('ERROR', f"Error fetching movie information: {e}")
-            return f'{title} {year}'
+                    else:
+                        log_message('WARN', f"Invalid choice, returning '{title}'")
+                        return title
+                except ValueError:
+                    log_message('WARN', f"Invalid input, returning '{title}'")
+                    return title
 
 
-async def process_movie(file, foldername, force=True):
+def process_movie(file, foldername, force=True):
     path = f"/{foldername}"
     log_message("INFO", f"Current Movie file: {os.path.join(path, file)}")
 
@@ -413,7 +401,7 @@ async def process_movie(file, foldername, force=True):
         title = match.group(1)
         year = match.group(2).strip('()')
 
-    proper_name = await get_movie_info(title, year, force)
+    proper_name = get_movie_info(title, year, force)
 
     if year is None or year == "":
         if proper_name is None:
@@ -425,7 +413,7 @@ async def process_movie(file, foldername, force=True):
     return proper_name, ext
 
 
-async def process_anime(file, pattern1, pattern2, split=False, force=False):
+def process_anime(file, pattern1, pattern2, split=False, force=False):
     file = re.sub(r'^\[.*?\]\s*', '', file)
     name, ext = os.path.splitext(file)
 
@@ -446,7 +434,7 @@ async def process_anime(file, pattern1, pattern2, split=False, force=False):
                 season_number = 0
             else:
                 log_message('INFO', f'Anime Show: {show_name}')
-                season_number = await aioconsole.ainput("Enter the season number for the above show: ")
+                season_number = input("Enter the season number for the above show: ")
                 season_cache[show_name] = season_number
         else:
             if show_name in season_cache:
@@ -466,19 +454,19 @@ async def process_anime(file, pattern1, pattern2, split=False, force=False):
         episode_identifier = f"s{int(season_number):02d}e{int(episode_number):02d}"
         if resolution:
             show_name = f"{show_name.strip()} [{resolution.strip()}]"
-        showdir, showid, media_dir = await get_series_info(show_name, None, split, force)
+        showdir, showid, media_dir = get_series_info(show_name, None, split, force)
         return showdir, season_number, episode_identifier + ext, media_dir
 
     return None
 
 
-async def process_unmatched_anime(folder_path, split, force):
+def process_unmatched_anime(folder_path, split, force):
     unmatched_anime = {}
     matched_shows = {}
 
     for root, dirs, files in os.walk(folder_path):
         for file in files:
-            anime_data = await process_anime(file, pattern1, pattern2, split, force)
+            anime_data = process_anime(file, pattern1, pattern2, split, force)
             if anime_data:
                 showdir, season_number, new_name, media_dir = anime_data
                 src_file = os.path.join(root, file)
@@ -520,7 +508,7 @@ def process_unaccounted_folder(folder_path, dest_dir):
                 insert_unaccounted_data(src_dir, file_name, showid, year, symlink_top_folder, symlink_filename)
 
 
-async def create_symlinks(src_dir, dest_dir, force=False, split=False):
+def create_symlinks(src_dir, dest_dir, force=False, split=False):
     existing_symlinks = load_links('symlinks.pkl')
     ignored_files = load_ignored()
     symlink_created = []
@@ -577,7 +565,7 @@ async def create_symlinks(src_dir, dest_dir, force=False, split=False):
                     if year:
                         show_folder = re.sub(r'\(\d{4}\)$', '', show_folder).strip()
                         show_folder = re.sub(r'\d{4}$', '', show_folder).strip()
-                show_folder, showid, media_dir = await get_series_info(show_folder, year, split, force)
+                show_folder, showid, media_dir = get_series_info(show_folder, year, split, force)
                 show_folder = show_folder.replace('/', '')
 
                 resolution = extract_resolution(new_name)
