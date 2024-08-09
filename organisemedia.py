@@ -13,6 +13,8 @@ from collections import defaultdict
 
 init(autoreset=True)
 
+_api_cache = {}
+
 DATABASE_PATH = '/data/media_database.db'
 db_lock = threading.Lock()
 
