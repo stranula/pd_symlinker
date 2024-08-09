@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Database</title>
+</head>
+<body>
+    <h1>Media Database</h1>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Source Directory</th>
+            <th>File Name</th>
+            <th>IMDb ID</th>
+            <th>Year</th>
+            <th>Symlink Directory</th>
+            <th>Symlink File Name</th>
+            <th>Action</th>
+        </tr>
+        {% for movie in movies %}
+        <tr>
+            <td>{{ movie.id }}</td>
+            <td>{{ movie.src_dir }}</td>
+            <td>{{ movie.file_name }}</td>
+            <td>{{ movie.matched_imdb_id }}</td>
+            <td>{{ movie.year }}</td>
+            <td>{{ movie.symlink_top_folder }}</td>
+            <td>{{ movie.symlink_filename }}</td>
+            <td><a href="{{ url_for('edit', id=movie.id) }}">Edit</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

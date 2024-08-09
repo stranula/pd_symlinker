@@ -6,3 +6,4 @@ asyncio
 aioconsole
 aiohttp
 python-Levenshtein
+flask

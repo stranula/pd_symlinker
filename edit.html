@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Movie</title>
+</head>
+<body>
+    <h1>Edit Movie</h1>
+    <form method="post">
+        <label for="symlink_folder">Symlink Directory:</label>
+        <input type="text" id="symlink_folder" name="symlink_folder" value="{{ movie.symlink_top_folder }}" required>
+        <br>
+        <label for="symlink_filename">Symlink File Name:</label>
+        <input type="text" id="symlink_filename" name="symlink_filename" value="{{ movie.symlink_filename }}" required>
+        <br><br>
+        <button type="submit">Save</button>
+    </form>
+    <br>
+    <a href="{{ url_for('index') }}">Back to List</a>
+</body>
+</html>

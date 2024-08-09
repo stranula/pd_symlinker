@@ -513,31 +513,31 @@ def process_unaccounted_folder(folder_path, dest_dir):
     if imdb_id == "unknown":
         print(f"Error extracting IMDb ID from movie name: {movie_name}")
 
-    # Create target folder for the movie
-    target_folder = os.path.join(dest_dir_movies, f"{movie_name}")
-    if not os.path.exists(target_folder):
-        os.makedirs(target_folder, exist_ok=True)
-        print(f"Created target folder: {target_folder}")
-
-    # Construct target file name and symlink the largest file
-    file_ext = os.path.splitext(largest_file)[1]
-    target_file_name = f"{movie_name} [{resolution}]{file_ext}"
-    target_file_name = clean_filename(target_file_name)
-    target_file_path = os.path.join(target_folder, target_file_name)
-
-    largest_file_path = os.path.join(folder_path, largest_file)
-    if not os.path.exists(target_file_path):
-        try:
-            relative_source_path = os.path.relpath(largest_file_path, os.path.dirname(target_file_path))
-            os.symlink(relative_source_path, target_file_path)
-            print(f"Created relative symlink: {target_file_path} -> {relative_source_path}")
-        except OSError as e:
-            print(f"Error creating relative symlink: {e}")
-    else:
-        print(f"Symlink already exists: {target_file_path}")
-
-    # Insert information into the unaccounted table in the database
     try:
+        # Create target folder for the movie
+        target_folder = os.path.join(dest_dir_movies, f"{movie_name}")
+        if not os.path.exists(target_folder):
+            os.makedirs(target_folder, exist_ok=True)
+            print(f"Created target folder: {target_folder}")
+
+        # Construct target file name and symlink the largest file
+        file_ext = os.path.splitext(largest_file)[1]
+        target_file_name = f"{movie_name} [{resolution}]{file_ext}"
+        target_file_name = clean_filename(target_file_name)
+        target_file_path = os.path.join(target_folder, target_file_name)
+
+        largest_file_path = os.path.join(folder_path, largest_file)
+        if not os.path.exists(target_file_path):
+            try:
+                relative_source_path = os.path.relpath(largest_file_path, os.path.dirname(target_file_path))
+                os.symlink(relative_source_path, target_file_path)
+                print(f"Created relative symlink: {target_file_path} -> {relative_source_path}")
+            except OSError as e:
+                print(f"Error creating relative symlink: {e}")
+        else:
+            print(f"Symlink already exists: {target_file_path}")
+
+        # Insert information into the unaccounted table in the database
         with db_lock:
             conn = sqlite3.connect(DATABASE_PATH)
             c = conn.cursor()
@@ -558,7 +558,8 @@ def process_unaccounted_folder(folder_path, dest_dir):
             ''', (folder_path, largest_file, imdb_id, year, target_folder, target_file_name))
             conn.commit()
             conn.close()
-    except sqlite3.Error as e:
-        print(f"Error inserting into database: {e}")
+
+    except Exception as e:
+        print(f"Error in create_symlinks: {e}")
 
     return "movie"
