@@ -552,10 +552,8 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
     os.makedirs(dest_dir, exist_ok=True)
     log_message('DEBUG', 'processing...')
     existing_symlinks = load_symlinks()
-    # ignored_files = load_ignored()
-    ignored_files = []
+    ignored_files = load_ignored()
     symlink_created = []
-    movies_cache = defaultdict(list)
 
     for root, dirs, files in os.walk(src_dir):
         for file in files:
@@ -594,10 +592,14 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
                     is_anime = True
                 else:
                     is_movie = True
+                    # Handle movie processing directly here, if needed
                     movie_folder_name = os.path.basename(root)
-                    movies_cache[file].append((movie_folder_name, src_file, dest_dir, existing_symlinks))
-                    if len(movies_cache) >= 5:
-                        process_movies_in_batches(movies_cache, ignored_files=ignored_files)
+                    dest_file = os.path.join(dest_dir, movie_folder_name, file)
+                    if os.path.exists(dest_file):
+                        ignored_files.add(dest_file)
+                    else:
+                        os.symlink(src_file, dest_file)
+                        log_message("SUCCESS", f"Created symlink for movie: {dest_file}")
                     continue
 
             if not is_movie and not is_anime:
@@ -705,9 +707,4 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
             log_message("SUCCESS",
                         f"Created symlink: {Fore.LIGHTCYAN_EX}{clean_destination} {Style.RESET_ALL}-> {src_file}")
 
-    if movies_cache:
-        process_movies_in_batches(movies_cache, ignored_files=ignored_files)
-
-    save_ignored(ignored_files, src_dir)
     return symlink_created
-
