@@ -403,7 +403,7 @@ def extract_year_from_folder_and_file(folder_name, largest_file):
 _api_cache = {}
 
 
-def get_movie_info(title, year=None, force=False):
+def get_movie_info(title, year=None):
     global _api_cache
     formatted_title = title.replace(" ", "%20")
     cache_key = f"movie_{formatted_title}_{year}"
@@ -414,15 +414,8 @@ def get_movie_info(title, year=None, force=False):
     url = f"https://v3-cinemeta.strem.io/catalog/movie/top/search={formatted_title}.json"
     try:
         response = requests.get(url)
-        if response.status_code == 404:
-            imdb_id = input(f"Movie '{title}' not found. Please enter the IMDb ID: ")
-            if imdb_id:
-                url = f"https://v3-cinemeta.strem.io/catalog/movie/top/search={imdb_id}.json"
-                response = requests.get(url)
-            else:
-                return title
-
         if response.status_code != 200:
+            print(f"Error fetching movie information: HTTP {response.status_code}")
             return title
 
         movie_data = response.json()
@@ -439,63 +432,30 @@ def get_movie_info(title, year=None, force=False):
                     _api_cache[cache_key] = proper_name
                     return proper_name
 
-            if force:
-                chosen_movie = movie_options[0]
-                imdb_id = chosen_movie.get('imdb_id')
-                movie_title = chosen_movie.get('name')
-                year_info = chosen_movie.get('releaseInfo')
-                proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
-                return proper_name
+            # Fallback: Use the first result if no close match
+            chosen_movie = movie_options[0]
+            imdb_id = chosen_movie.get('imdb_id')
+            movie_title = chosen_movie.get('name')
+            year_info = chosen_movie.get('releaseInfo')
+            proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
+            _api_cache[cache_key] = proper_name
+            return proper_name
 
-            print(
-                f"No exact match found for {title}. Please choose from the following options or enter IMDb ID directly:")
-            for i, movie_info in enumerate(movie_options[:3]):
-                imdb_id = movie_info.get('imdb_id')
-                movie_title = movie_info.get('name')
-                year_info = movie_info.get('releaseInfo')
-                print(f"{i + 1}. {movie_title} ({year_info})")
-            choice = input("Enter the number of your choice, or enter IMDb ID directly: ")
-            if choice.lower().startswith('tt'):
-                imdb_id = choice
-                url = f"https://cinemeta-live.strem.io/meta/movie/{imdb_id}.json"
-                response = requests.get(url)
-                if response.status_code == 200:
-                    movie_data = response.json()
-                    if 'meta' in movie_data and movie_data['meta']:
-                        movie_info = movie_data['meta']
-                        imdb_id = movie_info.get('imdb_id')
-                        movie_title = movie_info.get('name')
-                        year_info = movie_info.get('releaseInfo')
-                        proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
-                        _api_cache[cache_key] = proper_name
-                        return proper_name
-                    else:
-                        print("No movie found with the provided IMDb ID")
-                        return title
-                else:
-                    print("Error fetching movie information with IMDb ID")
-                    return title
-            else:
-                try:
-                    choice = int(choice) - 1
-                    if 0 <= choice < len(movie_options[:3]):
-                        chosen_movie = movie_options[choice]
-                        imdb_id = chosen_movie.get('imdb_id')
-                        movie_title = chosen_movie.get('name')
-                        year_info = chosen_movie.get('releaseInfo')
-                        proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
-                        return proper_name
-                    else:
-                        print(f"Invalid choice, returning '{title}'")
-                        return title
-                except ValueError:
-                    print(f"Invalid input, returning '{title}'")
-                    return title
     except requests.RequestException as e:
         print(f"Error fetching movie information: {e}")
         return f'{title} {year}'
 
 
+def clean_title_for_search(title, year, resolution):
+    # Remove everything after the year or resolution
+    if year:
+        title = title.split(str(year))[0]
+    if resolution:
+        title = title.split(resolution)[0]
+    return title.strip()
+
+
+# Integration with process_unaccounted_folder
 def process_unaccounted_folder(folder_path, dest_dir):
     folder_name = os.path.basename(folder_path)
 
@@ -519,10 +479,14 @@ def process_unaccounted_folder(folder_path, dest_dir):
     year = extract_year_from_folder_and_file(folder_name, largest_file)
 
     # Extract the resolution from the folder name or the largest file using the existing function
-    resolution = extract_resolution(largest_file, parent_folder_name=folder_name, file_path=os.path.join(folder_path, largest_file))
+    resolution = extract_resolution(largest_file, parent_folder_name=folder_name,
+                                    file_path=os.path.join(folder_path, largest_file))
+
+    # Clean title by removing everything after the year or resolution
+    cleaned_title = clean_title_for_search(folder_name, year, resolution)
 
     # Fetch the proper movie name using the API
-    movie_name = get_movie_info(folder_name, year=year)
+    movie_name = get_movie_info(cleaned_title, year=year)
     print(f"Identified movie: {movie_name}")
 
     # Continue with additional processing for movies, e.g., creating symlinks, etc.
