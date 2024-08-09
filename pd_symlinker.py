@@ -349,17 +349,23 @@ def is_tv_show(folder_name):
         r'[Ss]eason\s*\d{1,2}',  # Season 1 or similar
         r'[Ee]pisode\s*\d{1,2}',  # Episode 1 or similar
         r'\d{1,2}[xX]\d{1,2}',  # 1x01 or similar
+        r'[Ss]eason\b',  # "Season" without a number
+        r'\b\d{4}\b\s\S*\s\S*(BluRay|WEB-DL|HDTV|DVDRip)',  # e.g., "2024 BluRay"
     ]
     for pattern in tv_show_patterns:
-        if re.search(pattern, folder_name, re.IGNORECASE):
+        match = re.search(pattern, folder_name, re.IGNORECASE)
+        if match:
+            print(f"Matched TV show pattern '{pattern}' in folder name '{folder_name}'")
             return True
     return False
+
 
 def check_files_for_tv_show(folder_path):
     for file_name in os.listdir(folder_path):
         if os.path.isfile(os.path.join(folder_path, file_name)):
             season, episode = extract_season_episode(file_name)
             if season and episode:
+                print(f"Detected season/episode pattern in file: {file_name}")
                 return True
     return False
 
