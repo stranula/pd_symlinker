@@ -349,8 +349,7 @@ def is_tv_show(folder_name):
         r'[Ss]eason\s*\d{1,2}',  # Season 1 or similar
         r'[Ee]pisode\s*\d{1,2}',  # Episode 1 or similar
         r'\d{1,2}[xX]\d{1,2}',  # 1x01 or similar
-        r'[Ss]eason\b',  # "Season" without a number
-        r'\b\d{4}\b\s\S*\s\S*(BluRay|WEB-DL|HDTV|DVDRip)',  # e.g., "2024 BluRay"
+        r'[Ss]eason\b'  # "Season" without a number
     ]
     for pattern in tv_show_patterns:
         match = re.search(pattern, folder_name, re.IGNORECASE)
@@ -369,19 +368,57 @@ def check_files_for_tv_show(folder_path):
                 return True
     return False
 
+
+def find_largest_file(folder_path):
+    largest_file = None
+    largest_size = 0
+    for file_name in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, file_name)
+        if os.path.isfile(file_path):
+            file_size = os.path.getsize(file_path)
+            if file_size > largest_size:
+                largest_size = file_size
+                largest_file = file_name
+    return largest_file
+
+
+def extract_year_from_folder_and_file(folder_name, largest_file):
+    # Try to extract the year from the folder name
+    folder_year = extract_year(folder_name)
+    if folder_year:
+        print(f"Found year {folder_year} in folder name: {folder_name}")
+        return folder_year
+
+    # Try to extract the year from the largest file name
+    file_year = extract_year(largest_file)
+    if file_year:
+        print(f"Found year {file_year} in largest file name: {largest_file}")
+        return file_year
+
+    print("No year found in folder or file names.")
+    return None
+
 def process_unaccounted_folder(folder_path, dest_dir):
     folder_name = os.path.basename(folder_path)
 
-    # Determine if the folder is likely a TV show based on the folder name
+    # Determine if the folder is likely a TV show or a movie
     if is_tv_show(folder_name):
         print(f"{folder_path} appears to be a TV show based on folder name.")
         return "tv_show"
 
-    # Check if any of the files in the folder indicate a TV show
-    if check_files_for_tv_show(folder_path):
-        print(f"{folder_path} appears to be a TV show based on files.")
-        return "tv_show"
-
-    # If neither the folder name nor the files indicate a TV show, assume it's a movie
+    # If it's a movie, proceed with finding the largest file and extracting the year
     print(f"{folder_path} appears to be a movie.")
+
+    # Find the largest file in the folder
+    largest_file = find_largest_file(folder_path)
+    if largest_file:
+        print(f"Largest file in the folder: {largest_file}")
+    else:
+        print("No files found in the folder.")
+        return "no_files"
+
+    # Extract the year from the folder name or the largest file
+    year = extract_year_from_folder_and_file(folder_name, largest_file)
+
+    # Here you can continue with additional processing for movies...
     return "movie"
