@@ -9,7 +9,7 @@ from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 from moviepy.editor import VideoFileClip
 import threading
-from organisemedia import process_unaccounted_folder
+# from organisemedia import process_unaccounted_folder
 import time
 
 
@@ -333,6 +333,130 @@ def create_symlinks_from_catalog(src_dir, dest_dir, dest_dir_movies, catalog_pat
         dir_path = os.path.join(src_dir, dir_name)
         print(f"Processing unaccounted folder: {dir_path}")
         process_unaccounted_folder(dir_path, DEST_DIR)
+
+
+def process_unaccounted_folder(folder_path, dest_dir):
+    try:
+        folder_name = os.path.basename(folder_path)
+        sanitized_name = sanitize_title(folder_name)
+        year = extract_year(folder_name)
+
+        # Determine if this folder is a TV show or a movie
+        best_match = search_tv_show_with_year_range(sanitized_name, year, id='tmdb', force=False,
+                                                    folder_path=folder_path, range_delta=1)
+
+        if best_match:
+            # If it's a TV show
+            print(f"Matched TV show: {best_match}")
+            series_name, tmdb_id, series_year = best_match.split(' {tmdb-')[0], best_match.split(' {tmdb-')[1][
+                                                                                :-1], year
+
+            target_folder = os.path.join(dest_dir, f"{series_name} ({series_year}) {{tmdb-{tmdb_id}}}")
+            if not os.path.exists(target_folder):
+                os.makedirs(target_folder, exist_ok=True)
+
+            for file_name in os.listdir(folder_path):
+                file_path = os.path.join(folder_path, file_name)
+                if os.path.isfile(file_path):
+                    season, episode = extract_season_episode(file_name)
+                    season_folder = f"Season {season}" if season else "Season Unknown"
+                    episode_identifier = f"S{season}E{episode}" if season and episode else "Unknown Episode"
+
+                    target_season_folder = os.path.join(target_folder, season_folder)
+                    if not os.path.exists(target_season_folder):
+                        os.makedirs(target_season_folder, exist_ok=True)
+
+                    resolution = extract_resolution(file_name)
+                    file_ext = os.path.splitext(file_name)[1]
+                    target_file_name = f"{series_name} ({series_year}) - {episode_identifier} [{resolution}]{file_ext}"
+                    target_file_name = clean_filename(target_file_name)
+                    target_file_path = os.path.join(target_season_folder, target_file_name)
+
+                    if not os.path.exists(target_file_path):
+                        try:
+                            relative_source_path = os.path.relpath(file_path, os.path.dirname(target_file_path))
+                            os.symlink(relative_source_path, target_file_path)
+                            print(f"Created symlink: {target_file_path} -> {relative_source_path}")
+                        except OSError as e:
+                            print(f"Error creating symlink: {e}")
+
+                    log_media_item(file_path, target_file_path, tmdb_id)
+
+        else:
+            # If it's a movie
+            print(f"No TV show match found, trying as a movie: {sanitized_name}")
+            movie_data = search_movie(sanitized_name, year)
+            if movie_data:
+                movie_name = movie_data['title']
+                movie_year = movie_data['release_date'].split('-')[0] if movie_data['release_date'] else "Unknown Year"
+                tmdb_id = movie_data['id']
+
+                target_folder = os.path.join(dest_dir_movies, f"{movie_name} ({movie_year}) {{tmdb-{tmdb_id}}}")
+                if not os.path.exists(target_folder):
+                    os.makedirs(target_folder, exist_ok=True)
+
+                for file_name in os.listdir(folder_path):
+                    file_path = os.path.join(folder_path, file_name)
+                    if os.path.isfile(file_path):
+                        resolution = extract_resolution(file_name)
+                        file_ext = os.path.splitext(file_name)[1]
+                        target_file_name = f"{movie_name} ({movie_year}) [{resolution}]{file_ext}"
+                        target_file_name = clean_filename(target_file_name)
+                        target_file_path = os.path.join(target_folder, target_file_name)
+
+                        if not os.path.exists(target_file_path):
+                            try:
+                                relative_source_path = os.path.relpath(file_path, os.path.dirname(target_file_path))
+                                os.symlink(relative_source_path, target_file_path)
+                                print(f"Created symlink: {target_file_path} -> {relative_source_path}")
+                            except OSError as e:
+                                print(f"Error creating symlink: {e}")
+
+                        log_media_item(file_path, target_file_path, tmdb_id)
+
+        # Mark folder as processed
+        log_processed_folder(folder_name, "Processed")
+
+    except Exception as e:
+        print(f"Error processing unaccounted folder: {e}")
+        log_processed_folder(folder_name, f"Error: {e}")
+
+
+def search_tv_show_with_year_range(query, year, id, force, folder_path, range_delta):
+    if year is not None:
+        for delta in range(-range_delta, range_delta + 1):
+            result = search_tv_show(query, year + delta, id=id, force=force, folder_path=folder_path)
+            if result:
+                return result
+    else:
+        result = search_tv_show(query, year, id=id, force=force, folder_path=folder_path)
+        if result:
+            return result
+    return None
+
+
+def log_processed_folder(folder_name, status):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute('''INSERT OR IGNORE INTO ProcessedFolders (folder_name, status)
+                      VALUES (?, ?)''', (folder_name, status))
+    cursor.execute('''UPDATE ProcessedFolders SET status = ? WHERE folder_name = ?''', (status, folder_name))
+    conn.commit()
+    conn.close()
+
+
+def log_media_item(src_dir, symlink, tmdb_id=None):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO MediaItems (src_dir, symlink, tmdb_id)
+        VALUES (?, ?, ?)
+        ON CONFLICT(src_dir) DO UPDATE SET
+        symlink=excluded.symlink,
+        tmdb_id=excluded.tmdb_id
+    ''', (src_dir, symlink, tmdb_id))
+    conn.commit()
+    conn.close()
 
 
 def create_symlinks():
