@@ -398,6 +398,39 @@ def extract_year_from_folder_and_file(folder_name, largest_file):
     print("No year found in folder or file names.")
     return None
 
+
+def extract_resolution_from_folder_and_file(folder_name, largest_file):
+    common_resolutions = {
+        "480p": "480p",
+        "720p": "720p",
+        "1080p": "1080p",
+        "2160p": "2160p",
+        "UHD": "2160p",
+    }
+
+    # Try to find resolution in folder name
+    for key, value in common_resolutions.items():
+        if key.lower() in folder_name.lower():
+            print(f"Found resolution {value} in folder name: {folder_name}")
+            return value
+
+    # Try to find resolution in the largest file name
+    for key, value in common_resolutions.items():
+        if key.lower() in largest_file.lower():
+            print(f"Found resolution {value} in largest file name: {largest_file}")
+            return value
+
+    # Fallback: Attempt to extract resolution using the existing method
+    resolution = extract_resolution(largest_file, parent_folder_name=folder_name,
+                                    file_path=os.path.join(folder_path, largest_file))
+    if resolution:
+        print(f"Extracted resolution using MoviePy: {resolution}")
+        return resolution
+
+    print("No resolution found in folder or file names.")
+    return None
+
+
 def process_unaccounted_folder(folder_path, dest_dir):
     folder_name = os.path.basename(folder_path)
 
@@ -420,5 +453,9 @@ def process_unaccounted_folder(folder_path, dest_dir):
     # Extract the year from the folder name or the largest file
     year = extract_year_from_folder_and_file(folder_name, largest_file)
 
-    # Here you can continue with additional processing for movies...
+    # Extract the resolution from the folder name or the largest file
+    resolution = extract_resolution_from_folder_and_file(folder_name, largest_file)
+
+    # Here you can continue with additional processing for movies, e.g., creating symlinks, etc.
+    print(f"Extracted data - Year: {year}, Resolution: {resolution}")
     return "movie"
