@@ -422,24 +422,27 @@ def get_movie_info(title, year=None):
 
         if 'metas' in movie_data and movie_data['metas']:
             movie_options = movie_data['metas']
+            best_match = None
+            highest_score = 0
+
             for movie_info in movie_options:
                 imdb_id = movie_info.get('imdb_id')
                 movie_title = movie_info.get('name')
                 year_info = movie_info.get('releaseInfo')
 
-                if fuzz.ratio(title.lower().strip(), movie_title.lower()) >= 90:
-                    proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
-                    _api_cache[cache_key] = proper_name
-                    return proper_name
+                # Use stricter matching criteria
+                score = fuzz.ratio(title.lower().strip(), movie_title.lower().strip())
+                if score > highest_score:
+                    highest_score = score
+                    best_match = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
 
-            # Fallback: Use the first result if no close match
-            chosen_movie = movie_options[0]
-            imdb_id = chosen_movie.get('imdb_id')
-            movie_title = chosen_movie.get('name')
-            year_info = chosen_movie.get('releaseInfo')
-            proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
-            _api_cache[cache_key] = proper_name
-            return proper_name
+            # Reject outright if the best match score is too low
+            if highest_score >= 80:  # Adjust this threshold as needed
+                _api_cache[cache_key] = best_match
+                return best_match
+            else:
+                print(f"Rejected match for '{title}' with best score {highest_score}. Returning original title.")
+                return title
 
     except requests.RequestException as e:
         print(f"Error fetching movie information: {e}")
@@ -450,7 +453,7 @@ def clean_title_for_search(title, year, resolution):
     # Remove everything after the year or resolution
     if year:
         title = title.split(str(year))[0]
-    if resolution:
+    elif resolution:
         title = title.split(resolution)[0]
     return title.strip()
 
