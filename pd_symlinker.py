@@ -399,36 +399,100 @@ def extract_year_from_folder_and_file(folder_name, largest_file):
     return None
 
 
-def extract_resolution_from_folder_and_file(folder_name, largest_file):
-    common_resolutions = {
-        "480p": "480p",
-        "720p": "720p",
-        "1080p": "1080p",
-        "2160p": "2160p",
-        "UHD": "2160p",
-    }
+_api_cache = {}
 
-    # Try to find resolution in folder name
-    for key, value in common_resolutions.items():
-        if key.lower() in folder_name.lower():
-            print(f"Found resolution {value} in folder name: {folder_name}")
-            return value
 
-    # Try to find resolution in the largest file name
-    for key, value in common_resolutions.items():
-        if key.lower() in largest_file.lower():
-            print(f"Found resolution {value} in largest file name: {largest_file}")
-            return value
+def get_movie_info(title, year=None, force=False):
+    global _api_cache
+    formatted_title = title.replace(" ", "%20")
+    cache_key = f"movie_{formatted_title}_{year}"
 
-    # Fallback: Attempt to extract resolution using the existing method
-    resolution = extract_resolution(largest_file, parent_folder_name=folder_name,
-                                    file_path=os.path.join(folder_path, largest_file))
-    if resolution:
-        print(f"Extracted resolution using MoviePy: {resolution}")
-        return resolution
+    if cache_key in _api_cache:
+        return _api_cache[cache_key]
 
-    print("No resolution found in folder or file names.")
-    return None
+    url = f"https://v3-cinemeta.strem.io/catalog/movie/top/search={formatted_title}.json"
+    try:
+        response = requests.get(url)
+        if response.status_code == 404:
+            imdb_id = input(f"Movie '{title}' not found. Please enter the IMDb ID: ")
+            if imdb_id:
+                url = f"https://v3-cinemeta.strem.io/catalog/movie/top/search={imdb_id}.json"
+                response = requests.get(url)
+            else:
+                return title
+
+        if response.status_code != 200:
+            return title
+
+        movie_data = response.json()
+
+        if 'metas' in movie_data and movie_data['metas']:
+            movie_options = movie_data['metas']
+            for movie_info in movie_options:
+                imdb_id = movie_info.get('imdb_id')
+                movie_title = movie_info.get('name')
+                year_info = movie_info.get('releaseInfo')
+
+                if fuzz.ratio(title.lower().strip(), movie_title.lower()) >= 90:
+                    proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
+                    _api_cache[cache_key] = proper_name
+                    return proper_name
+
+            if force:
+                chosen_movie = movie_options[0]
+                imdb_id = chosen_movie.get('imdb_id')
+                movie_title = chosen_movie.get('name')
+                year_info = chosen_movie.get('releaseInfo')
+                proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
+                return proper_name
+
+            print(
+                f"No exact match found for {title}. Please choose from the following options or enter IMDb ID directly:")
+            for i, movie_info in enumerate(movie_options[:3]):
+                imdb_id = movie_info.get('imdb_id')
+                movie_title = movie_info.get('name')
+                year_info = movie_info.get('releaseInfo')
+                print(f"{i + 1}. {movie_title} ({year_info})")
+            choice = input("Enter the number of your choice, or enter IMDb ID directly: ")
+            if choice.lower().startswith('tt'):
+                imdb_id = choice
+                url = f"https://cinemeta-live.strem.io/meta/movie/{imdb_id}.json"
+                response = requests.get(url)
+                if response.status_code == 200:
+                    movie_data = response.json()
+                    if 'meta' in movie_data and movie_data['meta']:
+                        movie_info = movie_data['meta']
+                        imdb_id = movie_info.get('imdb_id')
+                        movie_title = movie_info.get('name')
+                        year_info = movie_info.get('releaseInfo')
+                        proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
+                        _api_cache[cache_key] = proper_name
+                        return proper_name
+                    else:
+                        print("No movie found with the provided IMDb ID")
+                        return title
+                else:
+                    print("Error fetching movie information with IMDb ID")
+                    return title
+            else:
+                try:
+                    choice = int(choice) - 1
+                    if 0 <= choice < len(movie_options[:3]):
+                        chosen_movie = movie_options[choice]
+                        imdb_id = chosen_movie.get('imdb_id')
+                        movie_title = chosen_movie.get('name')
+                        year_info = chosen_movie.get('releaseInfo')
+                        proper_name = f"{movie_title} ({year_info}) {{imdb-{imdb_id}}}"
+                        return proper_name
+                    else:
+                        print(f"Invalid choice, returning '{title}'")
+                        return title
+                except ValueError:
+                    print(f"Invalid input, returning '{title}'")
+                    return title
+    except requests.RequestException as e:
+        print(f"Error fetching movie information: {e}")
+        return f'{title} {year}'
 
 
 def process_unaccounted_folder(folder_path, dest_dir):
@@ -453,9 +517,12 @@ def process_unaccounted_folder(folder_path, dest_dir):
     # Extract the year from the folder name or the largest file
     year = extract_year_from_folder_and_file(folder_name, largest_file)
 
-    # Extract the resolution from the folder name or the largest file
-    resolution = extract_resolution_from_folder_and_file(folder_name, largest_file)
+    # Extract the resolution from the folder name or the largest file using the existing function
+    resolution = extract_resolution(largest_file, parent_folder_name=folder_name, file_path=os.path.join(folder_path, largest_file))
 
-    # Here you can continue with additional processing for movies, e.g., creating symlinks, etc.
-    print(f"Extracted data - Year: {year}, Resolution: {resolution}")
+    # Fetch the proper movie name using the API
+    movie_name = get_movie_info(folder_name, year=year)
+    print(f"Identified movie: {movie_name}")
+
+    # Continue with additional processing for movies, e.g., creating symlinks, etc.
     return "movie"
