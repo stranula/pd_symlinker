@@ -710,7 +710,7 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
             else:
                 relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
                 os.symlink(relative_source_path, dest_file)
-                save_symlink(src_file, dest_file, src_dir)
+                # save_symlink(src_file, dest_file, src_dir)
                 symlink_created.append(dest_file)
 
             clean_destination = os.path.basename(dest_file)
