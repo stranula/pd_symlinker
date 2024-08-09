@@ -455,16 +455,15 @@ def clean_title_for_search(title, year, resolution):
     return title.strip()
 
 
-# Integration with process_unaccounted_folder
 def process_unaccounted_folder(folder_path, dest_dir):
     folder_name = os.path.basename(folder_path)
 
-    # Determine if the folder is likely a TV show or a movie
-    if is_tv_show(folder_name):
-        print(f"{folder_path} appears to be a TV show based on folder name.")
+    # Check if the folder is a TV show first
+    if is_tv_show(folder_name) or check_files_for_tv_show(folder_path):
+        print(f"{folder_path} appears to be a TV show based on folder name or file structure.")
         return "tv_show"
 
-    # If it's a movie, proceed with finding the largest file and extracting the year
+    # Proceed as a movie if not a TV show
     print(f"{folder_path} appears to be a movie.")
 
     # Find the largest file in the folder
