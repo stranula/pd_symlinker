@@ -552,7 +552,8 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
     os.makedirs(dest_dir, exist_ok=True)
     log_message('DEBUG', 'processing...')
     existing_symlinks = load_symlinks()
-    ignored_files = load_ignored()
+    # ignored_files = load_ignored()
+    ignored_files = []
     symlink_created = []
 
     for root, dirs, files in os.walk(src_dir):
