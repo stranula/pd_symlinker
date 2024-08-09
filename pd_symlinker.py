@@ -491,5 +491,28 @@ def process_unaccounted_folder(folder_path, dest_dir):
     movie_name = get_movie_info(cleaned_title, year=year)
     print(f"Identified movie: {movie_name}")
 
-    # Continue with additional processing for movies, e.g., creating symlinks, etc.
+    # Create target folder for the movie
+    imdb_id = extract_id(movie_name)
+    target_folder = os.path.join(dest_dir_movies, f"{movie_name}")
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder, exist_ok=True)
+        print(f"Created target folder: {target_folder}")
+
+    # Construct target file name and symlink the largest file
+    file_ext = os.path.splitext(largest_file)[1]
+    target_file_name = f"{movie_name} [{resolution}]{file_ext}"
+    target_file_name = clean_filename(target_file_name)
+    target_file_path = os.path.join(target_folder, target_file_name)
+
+    largest_file_path = os.path.join(folder_path, largest_file)
+    if not os.path.exists(target_file_path):
+        try:
+            relative_source_path = os.path.relpath(largest_file_path, os.path.dirname(target_file_path))
+            os.symlink(relative_source_path, target_file_path)
+            print(f"Created relative symlink: {target_file_path} -> {relative_source_path}")
+        except OSError as e:
+            print(f"Error creating relative symlink: {e}")
+    else:
+        print(f"Symlink already exists: {target_file_path}")
+
     return "movie"
