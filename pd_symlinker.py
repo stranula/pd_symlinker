@@ -491,8 +491,14 @@ def process_unaccounted_folder(folder_path, dest_dir):
     movie_name = get_movie_info(cleaned_title, year=year)
     print(f"Identified movie: {movie_name}")
 
+    # Handle cases where IMDb ID might not be extracted correctly
+    try:
+        imdb_id = extract_id(movie_name)
+    except IndexError:
+        print(f"Error extracting IMDb ID from movie name: {movie_name}")
+        imdb_id = "unknown"
+
     # Create target folder for the movie
-    imdb_id = extract_id(movie_name)
     target_folder = os.path.join(dest_dir_movies, f"{movie_name}")
     if not os.path.exists(target_folder):
         os.makedirs(target_folder, exist_ok=True)
