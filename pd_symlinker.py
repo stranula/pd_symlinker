@@ -537,25 +537,28 @@ def process_unaccounted_folder(folder_path, dest_dir):
         print(f"Symlink already exists: {target_file_path}")
 
     # Insert information into the unaccounted table in the database
-    with db_lock:
-        conn = sqlite3.connect(DATABASE_PATH)
-        c = conn.cursor()
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS unaccounted (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                src_dir TEXT,
-                file_name TEXT,
-                matched_imdb_id TEXT,
-                year TEXT,
-                symlink_top_folder TEXT,
-                symlink_filename TEXT
-            )
-        ''')
-        c.execute('''
-            INSERT INTO unaccounted (src_dir, file_name, matched_imdb_id, year, symlink_top_folder, symlink_filename)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (folder_path, largest_file, imdb_id, year, target_folder, target_file_name))
-        conn.commit()
-        conn.close()
+    try:
+        with db_lock:
+            conn = sqlite3.connect(DATABASE_PATH)
+            c = conn.cursor()
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS unaccounted (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    src_dir TEXT,
+                    file_name TEXT,
+                    matched_imdb_id TEXT,
+                    year TEXT,
+                    symlink_top_folder TEXT,
+                    symlink_filename TEXT
+                )
+            ''')
+            c.execute('''
+                INSERT INTO unaccounted (src_dir, file_name, matched_imdb_id, year, symlink_top_folder, symlink_filename)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (folder_path, largest_file, imdb_id, year, target_folder, target_file_name))
+            conn.commit()
+            conn.close()
+    except sqlite3.Error as e:
+        print(f"Error inserting into database: {e}")
 
     return "movie"
