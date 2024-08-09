@@ -516,17 +516,22 @@ def process_unaccounted_folder(folder_path, dest_dir):
     try:
         # Create target folder for the movie
         target_folder = os.path.join(dest_dir_movies, f"{movie_name}")
+        print(f"Target folder: {target_folder}")
         if not os.path.exists(target_folder):
             os.makedirs(target_folder, exist_ok=True)
             print(f"Created target folder: {target_folder}")
 
         # Construct target file name and symlink the largest file
         file_ext = os.path.splitext(largest_file)[1]
+        print(f"File extension: {file_ext}")
         target_file_name = f"{movie_name} [{resolution}]{file_ext}"
         target_file_name = clean_filename(target_file_name)
+        print(f"Target file name: {target_file_name}")
         target_file_path = os.path.join(target_folder, target_file_name)
+        print(f"Target file path: {target_file_path}")
 
         largest_file_path = os.path.join(folder_path, largest_file)
+        print(f"Largest file path: {largest_file_path}")
         if not os.path.exists(target_file_path):
             try:
                 relative_source_path = os.path.relpath(largest_file_path, os.path.dirname(target_file_path))
