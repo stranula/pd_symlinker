@@ -450,12 +450,29 @@ def get_movie_info(title, year=None):
 
 
 def clean_title_for_search(title, year, resolution):
+    # Common terms to remove from titles
+    terms_to_remove = [
+        r'\bPROPER\b', r'\bREMUX\b', r'\bREMASTERED\b', r'\bEXTENDED\b', r'\bUNRATED\b',
+        r'\bDIRECTORS.CUT\b', r'\bBluRay\b', r'\bHDR\b', r'\bHEVC\b', r'\bDTS\b',
+        r'\bDTS-HD\b', r'\bMA\b', r'\bTrueHD\b', r'\bAtmos\b', r'\bAVC\b',
+        r'\bH\.264\b', r'\bH\.265\b', r'\bDDP\b', r'\b7\.1\b', r'\b5\.1\b',
+        r'\b2160p\b', r'\b1080p\b', r'\b720p\b', r'\b4K\b'
+    ]
+
+    # Replace unwanted terms with an empty string
+    for term in terms_to_remove:
+        title = re.sub(term, '', title, flags=re.IGNORECASE)
+
     # Remove everything after the year or resolution
     if year:
         title = title.split(str(year))[0]
     elif resolution:
         title = title.split(resolution)[0]
-    return title.strip()
+
+    # Clean up any extra periods, underscores, or spaces
+    title = re.sub(r'[._\-\s]+', ' ', title).strip()
+
+    return title
 
 
 def process_unaccounted_folder(folder_path, dest_dir):
@@ -484,7 +501,7 @@ def process_unaccounted_folder(folder_path, dest_dir):
     resolution = extract_resolution(largest_file, parent_folder_name=folder_name,
                                     file_path=os.path.join(folder_path, largest_file))
 
-    # Clean title by removing everything after the year or resolution
+    # Clean title by removing unnecessary characters and everything after the year or resolution
     cleaned_title = clean_title_for_search(folder_name, year, resolution)
 
     # Fetch the proper movie name using the API
@@ -492,11 +509,9 @@ def process_unaccounted_folder(folder_path, dest_dir):
     print(f"Identified movie: {movie_name}")
 
     # Handle cases where IMDb ID might not be extracted correctly
-    try:
-        imdb_id = extract_id(movie_name)
-    except IndexError:
+    imdb_id = extract_id(movie_name)
+    if imdb_id == "unknown":
         print(f"Error extracting IMDb ID from movie name: {movie_name}")
-        imdb_id = "unknown"
 
     # Create target folder for the movie
     target_folder = os.path.join(dest_dir_movies, f"{movie_name}")
