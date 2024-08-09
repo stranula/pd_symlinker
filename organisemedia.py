@@ -551,8 +551,7 @@ def process_unaccounted_folder(folder_path, dest_dir):
 def create_symlinks(src_dir, dest_dir, force=False, split=False):
     os.makedirs(dest_dir, exist_ok=True)
     log_message('DEBUG', 'processing...')
-    existing_symlinks = load_symlinks()
-    # ignored_files = load_ignored()
+    existing_symlinks = []
     ignored_files = []
     symlink_created = []
 
@@ -599,8 +598,11 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
                     if os.path.exists(dest_file):
                         ignored_files.add(dest_file)
                     else:
-                        os.symlink(src_file, dest_file)
-                        log_message("SUCCESS", f"Created symlink for movie: {dest_file}")
+                        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+                        relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
+                        os.symlink(relative_source_path, dest_file)
+                        log_message("SUCCESS",
+                                    f"Created relative symlink for movie: {dest_file} -> {relative_source_path}")
                     continue
 
             if not is_movie and not is_anime:
@@ -697,15 +699,21 @@ def create_symlinks(src_dir, dest_dir, force=False, split=False):
                 save_ignored(dest_file, src_dir)
                 continue
 
+            if not os.path.exists(src_file):
+                log_message('ERROR', f"Source file does not exist: {src_file}")
+                continue
+
             if os.path.isdir(src_file):
                 shutil.copytree(src_file, dest_file, symlinks=True)
             else:
-                os.symlink(src_file, dest_file)
+                relative_source_path = os.path.relpath(src_file, os.path.dirname(dest_file))
+                os.symlink(relative_source_path, dest_file)
                 save_symlink(src_file, dest_file, src_dir)
                 symlink_created.append(dest_file)
 
             clean_destination = os.path.basename(dest_file)
             log_message("SUCCESS",
-                        f"Created symlink: {Fore.LIGHTCYAN_EX}{clean_destination} {Style.RESET_ALL}-> {src_file}")
+                        f"Created relative symlink: {Fore.LIGHTCYAN_EX}{clean_destination} {Style.RESET_ALL} -> {relative_source_path}")
 
     return symlink_created
+
